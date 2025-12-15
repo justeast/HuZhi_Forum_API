@@ -5,7 +5,7 @@ from pathlib import Path
 import sys
 from dotenv import load_dotenv
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent
 
 load_dotenv(BASE_DIR / '.env')  # 明确到根目录找 .env
 

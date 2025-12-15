@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "corsheaders",
+    "model_utils",
     "django_filters",
     "rest_framework",
 
@@ -128,6 +129,8 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
+
+AUTH_USER_MODEL = 'base.User'
 
 # 暴露需要的Header
 CORS_EXPOSE_HEADERS = [
