@@ -16,6 +16,11 @@ import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# 确保项目根目录下存在 logs 文件夹，否则 FileHandler 会报错
+LOG_DIR = BASE_DIR / 'logs'
+if not LOG_DIR.exists():
+    os.makedirs(LOG_DIR)
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
@@ -91,7 +96,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': '',  # 数据库名
+        'NAME': os.getenv("HUZHI_MYSQL_NAME"),  # 数据库名
         'USER': os.getenv("HUZHI_MYSQL_USER"),  # 用户
         'PASSWORD': os.getenv("HUZHI_MYSQL_PASSWORD"),  # 密码
         'HOST': os.getenv("HUZHI_MYSQL_HOST"),  # 地址
@@ -124,9 +129,16 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
+# 暴露需要的Header
 CORS_EXPOSE_HEADERS = [
-    'Content-Disposition',
+    'Content-Disposition', # 主要用于文件下载
 ]
+
+# 允许所有来源
+CORS_ALLOW_ALL_ORIGINS = True
+
+# 关闭凭证允许
+CORS_ALLOW_CREDENTIALS = False  # 使用jwt,前端通过 Header (Authorization: Bearer <token>) 传 Token，不需要开启
 
 LANGUAGE_CODE = "zh-hans"
 
@@ -147,3 +159,82 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+
+    'formatters': {
+        # 详细格式：包含时间、日志级别、进程ID、线程ID、文件名、行号、信息
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        # 简单格式：只包含时间、级别、模块名、信息（适合控制台）
+        'simple': {
+            'format': '{levelname} {asctime} {module}: {message}',
+            'style': '{',
+        },
+    },
+
+    'filters': {
+        # 过滤器：只有在 DEBUG = True 时通过（用于控制台）
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+        # 过滤器：只有在 DEBUG = False 时通过（用于文件）
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse',
+        },
+    },
+
+    'handlers': {
+        # 控制台：只在开发模式(DEBUG=True)下生效
+        'console': {
+            'level': 'DEBUG',  # 开发时想看尽可能详细的信息
+            'filters': ['require_debug_true'],
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+        # 文件：只在生产模式(DEBUG=False)下生效
+        'file': {
+            'level': 'INFO',
+            'filters': ['require_debug_false'],  # 开发时这里会被阻断，不会创建/写入文件
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOG_DIR / 'info.log',
+            'maxBytes': 1024 * 1024 * 10,
+            'backupCount': 10,
+            'formatter': 'verbose',
+            'encoding': 'utf-8',
+        },
+        'error_file': {
+            'level': 'ERROR',
+            'filters': ['require_debug_false'],
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOG_DIR / 'error.log',
+            'maxBytes': 1024 * 1024 * 10,
+            'backupCount': 5,
+            'formatter': 'verbose',
+            'encoding': 'utf-8',
+        },
+    },
+
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file', 'error_file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        # 捕获所有 App 的日志
+        '': {  # 空字符串代表“根记录器”(Root Logger)
+            'handlers': ['console', 'file', 'error_file'],
+            'level': 'DEBUG',
+        },
+        # 调试时控制台打印sql语句
+        'django.db.backends': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}
