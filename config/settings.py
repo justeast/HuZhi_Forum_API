@@ -134,7 +134,7 @@ AUTH_USER_MODEL = 'base.User'
 
 # 暴露需要的Header
 CORS_EXPOSE_HEADERS = [
-    'Content-Disposition', # 主要用于文件下载
+    'Content-Disposition',  # 主要用于文件下载
 ]
 
 # 允许所有来源
@@ -209,6 +209,7 @@ LOGGING = {
             'backupCount': 10,
             'formatter': 'verbose',
             'encoding': 'utf-8',
+            'delay': True,
         },
         'error_file': {
             'level': 'ERROR',
@@ -219,6 +220,7 @@ LOGGING = {
             'backupCount': 5,
             'formatter': 'verbose',
             'encoding': 'utf-8',
+            'delay': True,
         },
     },
 
