@@ -163,6 +163,12 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# DRF配置
+REST_FRAMEWORK = {
+    # 自定义异常处理器
+    'EXCEPTION_HANDLER': 'common.exceptions.custom_exception_handler',
+}
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
