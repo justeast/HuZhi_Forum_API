@@ -32,3 +32,11 @@ class UserRegisterRespSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'phone', 'avatar', 'bio']
+
+
+class UserLoginReqSerializer(serializers.Serializer):
+    """
+    用户登录请求序列化器
+    """
+    account = serializers.CharField(required=True)
+    password = serializers.CharField(required=True)
