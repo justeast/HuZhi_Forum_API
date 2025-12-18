@@ -132,6 +132,12 @@ AUTH_PASSWORD_VALIDATORS = [
 
 AUTH_USER_MODEL = 'base.User'
 
+# 腾讯云COS配置
+COS_SECRET_ID = os.getenv("COS_SECRET_ID")
+COS_SECRET_KEY = os.getenv("COS_SECRET_KEY")
+COS_BUCKET = os.getenv("COS_BUCKET")
+COS_REGION = os.getenv("COS_REGION")
+
 # 暴露需要的Header
 CORS_EXPOSE_HEADERS = [
     'Content-Disposition',  # 主要用于文件下载
