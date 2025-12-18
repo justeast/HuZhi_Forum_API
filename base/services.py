@@ -1,5 +1,6 @@
 from django.db.models import Q
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
 from base.models import User
 from base import constants as c
 from common.exceptions import BusinessException
@@ -39,3 +40,15 @@ def authenticate_user(account: str, password: str) -> dict:
         'id': str(user.id),
         'username': user.username,
     }
+
+
+def logout_user(refresh_token: str) -> None:
+    """
+    用户登出
+    将refresh token加入黑名单
+    """
+    try:
+        token = RefreshToken(refresh_token)  # type:ignore
+        token.blacklist()
+    except TokenError:
+        raise BusinessException(code=c.INVALID_TOKEN, msg=c.INVALID_TOKEN_MSG)

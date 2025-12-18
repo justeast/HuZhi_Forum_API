@@ -1,8 +1,13 @@
 from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
 from common.response import OkResponse
-from base.serializers import UserRegisterReqSerializer, UserRegisterRespSerializer, UserLoginReqSerializer
+from base.serializers import (
+    UserRegisterReqSerializer,
+    UserRegisterRespSerializer,
+    UserLoginReqSerializer,
+    UserLogoutReqSerializer,
+)
 from base import services
 
 
@@ -34,3 +39,16 @@ class UserLoginView(APIView):
             password=serializer.validated_data['password']
         )
         return OkResponse(data=data)
+
+
+class UserLogoutView(APIView):
+    """
+    用户登出
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = UserLogoutReqSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        services.logout_user(serializer.validated_data['refresh'])
+        return OkResponse()

@@ -40,3 +40,10 @@ class UserLoginReqSerializer(serializers.Serializer):
     """
     account = serializers.CharField(required=True)
     password = serializers.CharField(required=True)
+
+
+class UserLogoutReqSerializer(serializers.Serializer):
+    """
+    用户登出请求序列化器
+    """
+    refresh = serializers.CharField(required=True)
