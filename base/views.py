@@ -7,6 +7,8 @@ from base.serializers import (
     UserRegisterRespSerializer,
     UserLoginReqSerializer,
     UserLogoutReqSerializer,
+    SendPwdResetCodeReqSerializer,
+    PwdResetReqSerializer,
 )
 from base import services
 
@@ -52,3 +54,33 @@ class UserLogoutView(APIView):
         serializer.is_valid(raise_exception=True)
         services.logout_user(serializer.validated_data['refresh'])
         return OkResponse()
+
+
+class SendPwdResetCodeView(APIView):
+    """
+    发送密码重置验证码
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = SendPwdResetCodeReqSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        services.send_pwd_reset_code(serializer.validated_data['email'])
+        return OkResponse(msg="验证码已发送")
+
+
+class UserPwdResetView(APIView):
+    """
+    重置密码
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = PwdResetReqSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        services.reset_password(
+            email=serializer.validated_data['email'],
+            code=serializer.validated_data['code'],
+            new_password=serializer.validated_data['new_password']
+        )
+        return OkResponse(msg="密码重置成功")

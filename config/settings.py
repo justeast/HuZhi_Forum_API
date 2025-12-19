@@ -186,6 +186,25 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
 }
 
+# Redis配置
+REDIS_HOST = os.getenv("REDIS_HOST")
+REDIS_PORT = int(os.getenv("REDIS_PORT"))
+REDIS_DB = int(os.getenv("REDIS_DB"))
+REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
+
+# 邮箱配置
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv("EMAIL_HOST")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT"))
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+DEFAULT_FROM_EMAIL = f'乎知论坛 <{os.getenv("EMAIL_HOST_USER")}>'
+
+# 验证码配置
+VERIFY_CODE_EXPIRE = 300  # 验证码过期时间（秒）
+VERIFY_CODE_INTERVAL = 60  # 验证码发送间隔（秒）
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
