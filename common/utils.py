@@ -2,6 +2,7 @@ import re
 import random
 import string
 from base import constants as c
+from base.models import User
 from common.exceptions import BusinessException
 
 
@@ -19,3 +20,48 @@ def generate_verify_code(length: int = 6) -> str:
     生成数字验证码
     """
     return ''.join(random.choices(string.digits, k=length))
+
+
+def validate_username_unique(value: str, exclude_pk=None) -> str:
+    """
+    校验用户名唯一性
+    :param value: 用户名
+    :param exclude_pk: 排除的用户主键（用于修改时排除当前用户）
+    """
+    queryset = User.objects.all()
+    if exclude_pk:
+        queryset = queryset.exclude(pk=exclude_pk)
+    if queryset.filter(username=value).exists():
+        raise BusinessException(code=c.USERNAME_ALREADY_EXISTS, msg=c.USERNAME_ALREADY_EXISTS_MSG)
+    return value
+
+
+def validate_email_unique(value: str, exclude_pk=None) -> str:
+    """
+    校验邮箱唯一性
+    :param value: 邮箱
+    :param exclude_pk: 排除的用户主键（用于修改时排除当前用户）
+    """
+    queryset = User.objects.all()
+    if exclude_pk:
+        queryset = queryset.exclude(pk=exclude_pk)
+    if queryset.filter(email=value).exists():
+        raise BusinessException(code=c.EMAIL_ALREADY_EXISTS, msg=c.EMAIL_ALREADY_EXISTS_MSG)
+    return value
+
+
+def validate_phone_unique(value: str, exclude_pk=None) -> str:
+    """
+    校验手机号唯一性
+    :param value: 手机号
+    :param exclude_pk: 排除的用户主键（用于修改时排除当前用户）
+    """
+    if not value:
+        return value
+
+    queryset = User.objects.all()
+    if exclude_pk:
+        queryset = queryset.exclude(pk=exclude_pk)
+    if queryset.filter(phone=value).exists():
+        raise BusinessException(code=c.PHONE_ALREADY_EXISTS, msg=c.PHONE_ALREADY_EXISTS_MSG)
+    return value

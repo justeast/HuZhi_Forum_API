@@ -1,4 +1,5 @@
 from rest_framework.views import APIView
+from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
 from common.response import OkResponse
@@ -10,6 +11,7 @@ from base.serializers import (
     SendPwdResetCodeReqSerializer,
     PwdResetReqSerializer,
     PwdChangeReqSerializer,
+    UserProfileSerializer,
 )
 from base import services
 
@@ -102,3 +104,27 @@ class UserPwdChangeView(APIView):
             new_password=serializer.validated_data['new_password']
         )
         return OkResponse(msg="密码修改成功")
+
+
+class UserProfileView(RetrieveUpdateAPIView):
+    """
+    用户详情（获取和修改）
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserProfileSerializer
+
+    def get_object(self):
+        return self.request.user
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return OkResponse(data=serializer.data)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return OkResponse(data=serializer.data)

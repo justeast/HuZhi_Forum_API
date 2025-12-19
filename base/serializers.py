@@ -1,6 +1,11 @@
 from rest_framework import serializers
 from base.models import User
-from common.utils import validate_password
+from common.utils import (
+    validate_password,
+    validate_username_unique,
+    validate_email_unique,
+    validate_phone_unique,
+)
 
 
 class UserRegisterReqSerializer(serializers.Serializer):
@@ -13,6 +18,24 @@ class UserRegisterReqSerializer(serializers.Serializer):
     phone = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=11)
     avatar = serializers.URLField(required=False, allow_blank=True, allow_null=True, max_length=500)
     bio = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=500)
+
+    def validate_username(self, value):
+        """
+        校验用户名唯一性
+        """
+        return validate_username_unique(value)
+
+    def validate_email(self, value):
+        """
+        校验邮箱唯一性
+        """
+        return validate_email_unique(value)
+
+    def validate_phone(self, value):
+        """
+        校验手机号唯一性
+        """
+        return validate_phone_unique(value)
 
 
 class UserRegisterRespSerializer(serializers.ModelSerializer):
@@ -61,3 +84,37 @@ class PwdChangeReqSerializer(serializers.Serializer):
     """
     old_password = serializers.CharField(required=True, max_length=128)
     new_password = serializers.CharField(required=True, max_length=128, validators=[validate_password])
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    """
+    用户详情序列化器（获取和修改）
+    """
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'phone', 'avatar', 'bio', 'created', 'modified']
+        read_only_fields = ['id', 'created', 'modified']
+        # 禁用ModelSerializer自动添加的UniqueValidator，使用自定义校验
+        extra_kwargs = {
+            'username': {'validators': []},
+            'email': {'validators': []},
+            'phone': {'validators': []},
+        }
+
+    def validate_username(self, value):
+        """
+        校验用户名唯一性（排除当前用户）
+        """
+        return validate_username_unique(value, exclude_pk=self.instance.pk)
+
+    def validate_email(self, value):
+        """
+        校验邮箱唯一性（排除当前用户）
+        """
+        return validate_email_unique(value, exclude_pk=self.instance.pk)
+
+    def validate_phone(self, value):
+        """
+        校验手机号唯一性（排除当前用户）
+        """
+        return validate_phone_unique(value, exclude_pk=self.instance.pk)
