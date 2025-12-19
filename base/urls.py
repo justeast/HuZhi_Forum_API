@@ -7,4 +7,5 @@ urlpatterns = [
     path('logout/', views.UserLogoutView.as_view(), name='logout'),
     path('pwd-reset/code/', views.SendPwdResetCodeView.as_view(), name='pwd_reset_code'),
     path('pwd-reset/', views.UserPwdResetView.as_view(), name='pwd_reset'),
+    path('pwd-change/', views.UserPwdChangeView.as_view(), name='pwd_change'),
 ]

@@ -9,6 +9,7 @@ from base.serializers import (
     UserLogoutReqSerializer,
     SendPwdResetCodeReqSerializer,
     PwdResetReqSerializer,
+    PwdChangeReqSerializer,
 )
 from base import services
 
@@ -84,3 +85,20 @@ class UserPwdResetView(APIView):
             new_password=serializer.validated_data['new_password']
         )
         return OkResponse(msg="密码重置成功")
+
+
+class UserPwdChangeView(APIView):
+    """
+    修改密码（已登录用户）
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = PwdChangeReqSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        services.change_password(
+            user=request.user,
+            old_password=serializer.validated_data['old_password'],
+            new_password=serializer.validated_data['new_password']
+        )
+        return OkResponse(msg="密码修改成功")

@@ -53,3 +53,11 @@ class PwdResetReqSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
     code = serializers.CharField(required=True, max_length=6)
     new_password = serializers.CharField(required=True, max_length=128, validators=[validate_password])
+
+
+class PwdChangeReqSerializer(serializers.Serializer):
+    """
+    修改密码请求序列化器
+    """
+    old_password = serializers.CharField(required=True, max_length=128)
+    new_password = serializers.CharField(required=True, max_length=128, validators=[validate_password])

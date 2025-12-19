@@ -119,3 +119,16 @@ def reset_password(email: str, code: str, new_password: str) -> None:
 
     # 删除验证码
     redis_client.delete(code_key)
+
+
+def change_password(user: User, old_password: str, new_password: str) -> None:
+    """
+    修改密码（已登录用户）
+    """
+    # 验证旧密码
+    if not user.check_password(old_password):
+        raise BusinessException(code=c.PASSWORD_INCORRECT, msg=c.PASSWORD_INCORRECT_MSG)
+
+    # 更新密码
+    user.set_password(new_password)
+    user.save()
