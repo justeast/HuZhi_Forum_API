@@ -96,6 +96,6 @@ class QuestionFollowSerializer(serializers.Serializer):
     问题关注操作序列化器
     """
     action = serializers.ChoiceField(
-        choices=c.FOLLOW_ACTION_CHOICES,
+        choices=c.QUESTION_FOLLOW_ACTION_CHOICES,
         required=True
     )

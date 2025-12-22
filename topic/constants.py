@@ -1,5 +1,18 @@
+# 关注操作常量
+TOPIC_FOLLOW_ACTION = 1  # 关注
+TOPIC_UNFOLLOW_ACTION = 2  # 取消关注
+
+TOPIC_FOLLOW_ACTION_CHOICES = (
+    (TOPIC_FOLLOW_ACTION, '关注'),
+    (TOPIC_UNFOLLOW_ACTION, '取消关注'),
+)
+
 # 错误码定义
 TOPIC_NOT_FOUND = 30001  # 话题不存在
+TOPIC_NO_PERMISSION = 30002  # 无权限操作该话题
+TOPIC_NAME_EXISTS = 30003  # 话题名称已存在
 
 # 错误消息
 TOPIC_NOT_FOUND_MSG = "部分话题不存在"
+TOPIC_NO_PERMISSION_MSG = "无权限操作该话题"
+TOPIC_NAME_EXISTS_MSG = "该话题名称已存在"

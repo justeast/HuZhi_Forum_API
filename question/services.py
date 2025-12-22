@@ -53,7 +53,7 @@ def toggle_follow_question(user, question: Question, action_type: int) -> None:
     """
     关注/取消关注问题
     """
-    if action_type == c.FOLLOW_ACTION:
+    if action_type == c.QUESTION_FOLLOW_ACTION:
         question.followers.add(user)
     else:
         question.followers.remove(user)
