@@ -103,5 +103,4 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
         action_type = serializer.validated_data['action']
         services.toggle_follow_question(request.user, question, action_type)
-
-        return OkResponse
+        return OkResponse()

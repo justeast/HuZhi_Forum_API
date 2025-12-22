@@ -23,6 +23,13 @@ class Topic(TimeStampedModel):
         verbose_name="关注者"
     )
 
+    creator = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='created_topics',
+        verbose_name="创建者"
+    )
+
     class Meta:
         db_table = "topic"
         verbose_name = "话题"
