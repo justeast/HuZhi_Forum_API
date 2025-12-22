@@ -1,0 +1,18 @@
+# 关注操作常量
+FOLLOW_ACTION = 1  # 关注
+UNFOLLOW_ACTION = 2  # 取消关注
+
+FOLLOW_ACTION_CHOICES = (
+    (FOLLOW_ACTION, '关注'),
+    (UNFOLLOW_ACTION, '取消关注'),
+)
+
+# 错误码定义
+QUESTION_NOT_FOUND = 20001  # 问题不存在
+QUESTION_NO_PERMISSION = 20002  # 无权限操作该问题
+INVALID_FOLLOW_ACTION = 20003  # 无效的关注操作
+
+# 错误消息
+QUESTION_NOT_FOUND_MSG = "问题不存在"
+QUESTION_NO_PERMISSION_MSG = "无权限操作该问题"
+INVALID_FOLLOW_ACTION_MSG = "无效的关注操作，action 必须为 1(关注) 或 2(取消关注)"

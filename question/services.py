@@ -1,0 +1,67 @@
+from django.db import transaction
+from question.models import Question
+from topic.models import Topic
+from question import constants as c
+
+
+def create_question(user, validated_data: dict) -> Question:
+    """
+    创建问题
+    创建后自动让作者关注该问题
+    """
+    topic_ids = validated_data.pop('topic_ids', [])
+
+    with transaction.atomic():
+        # 创建问题
+        question = Question.objects.create(
+            questioner=user,
+            **validated_data
+        )
+
+        # 关联话题
+        if topic_ids:
+            topics = Topic.objects.filter(id__in=topic_ids)
+            question.topics.set(topics)
+
+        # 作者自动关注问题
+        question.followers.add(user)
+
+    return question
+
+
+def update_question(question: Question, validated_data: dict) -> Question:
+    """
+    更新问题
+    """
+    topic_ids = validated_data.pop('topic_ids', None)
+
+    with transaction.atomic():
+        # 更新基本字段
+        for key, value in validated_data.items():
+            setattr(question, key, value)
+        question.save()
+
+        # 更新话题关联
+        if topic_ids is not None:
+            topics = Topic.objects.filter(id__in=topic_ids)
+            question.topics.set(topics)
+
+    return question
+
+
+def toggle_follow_question(user, question: Question, action_type: int) -> None:
+    """
+    关注/取消关注问题
+    """
+    if action_type == c.FOLLOW_ACTION:
+        question.followers.add(user)
+    else:
+        question.followers.remove(user)
+
+
+def increment_view_count(question: Question) -> None:
+    """
+    增加问题浏览量
+    """
+    question.view_count += 1
+    question.save(update_fields=['view_count'])
