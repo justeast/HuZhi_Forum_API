@@ -2,25 +2,17 @@ from rest_framework import serializers
 from question.models import Question
 from topic.models import Topic
 from topic.serializers import TopicSimpleSerializer
+from base.serializers import UserSimpleSerializer
 from question import constants as c
 from topic import constants as topic_c
 from common.exceptions import BusinessException
-
-
-class QuestionerSimpleSerializer(serializers.Serializer):
-    """
-    提问者简单信息序列化器
-    """
-    id = serializers.UUIDField()
-    username = serializers.CharField()
-    avatar = serializers.URLField()
 
 
 class QuestionListSerializer(serializers.ModelSerializer):
     """
     问题列表序列化器
     """
-    questioner = QuestionerSimpleSerializer(read_only=True)
+    questioner = UserSimpleSerializer(read_only=True)
     topics = TopicSimpleSerializer(many=True, read_only=True)
     follower_count = serializers.SerializerMethodField()
     answer_count = serializers.SerializerMethodField()

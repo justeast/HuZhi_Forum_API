@@ -2,6 +2,7 @@ from rest_framework import serializers
 from topic.models import Topic
 from topic import constants as c
 from common.exceptions import BusinessException
+from base.serializers import UserSimpleSerializer
 
 
 class TopicSimpleSerializer(serializers.ModelSerializer):
@@ -13,20 +14,11 @@ class TopicSimpleSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'icon', 'introduction']
 
 
-class CreatorSimpleSerializer(serializers.Serializer):
-    """
-    创建者简单信息序列化器
-    """
-    id = serializers.UUIDField()
-    username = serializers.CharField()
-    avatar = serializers.URLField()
-
-
 class TopicListSerializer(serializers.ModelSerializer):
     """
     话题列表序列化器
     """
-    creator = CreatorSimpleSerializer(read_only=True)
+    creator = UserSimpleSerializer(read_only=True)
     follower_count = serializers.SerializerMethodField()
     question_count = serializers.SerializerMethodField()
     

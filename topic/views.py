@@ -1,4 +1,4 @@
-from rest_framework import viewsets, status
+from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.filters import SearchFilter
@@ -6,9 +6,10 @@ from topic.models import Topic
 from topic import serializers, services
 from common.response import OkResponse
 from common.permissions import IsOwnerOrReadOnly
+from common.viewsets import BaseModelViewSet
 
 
-class TopicViewSet(viewsets.ModelViewSet):
+class TopicViewSet(BaseModelViewSet):
     """
     话题视图集
     """
@@ -79,19 +80,6 @@ class TopicViewSet(viewsets.ModelViewSet):
         self.check_object_permissions(request, instance)
         instance.delete()
         return OkResponse(status_code=status.HTTP_204_NO_CONTENT)
-
-    def list(self, request, *args, **kwargs):
-        """
-        获取话题列表
-        """
-        queryset = self.filter_queryset(self.get_queryset())
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-
-        serializer = self.get_serializer(queryset, many=True)
-        return OkResponse(data=serializer.data)
 
     @action(detail=True, methods=['post'], url_path='follow')
     def toggle_follow(self, request, pk=None):

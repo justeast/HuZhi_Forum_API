@@ -1,21 +1,22 @@
-from rest_framework import viewsets, status
+from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from question.models import Question
-from question import serializers, services
+from question import serializers, services, filters
 from common.response import OkResponse
 from common.permissions import IsOwnerOrReadOnly
+from common.viewsets import BaseModelViewSet
 
 
-class QuestionViewSet(viewsets.ModelViewSet):
+class QuestionViewSet(BaseModelViewSet):
     """
     问题视图集
     """
     permission_classes = [IsAuthenticated]
     queryset = Question.objects.select_related('questioner').prefetch_related('topics', 'followers')
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['topics']
+    filterset_class = filters.QuestionFilter
 
     def get_serializer_class(self):
         """
@@ -78,19 +79,6 @@ class QuestionViewSet(viewsets.ModelViewSet):
         self.check_object_permissions(request, instance)
         instance.delete()
         return OkResponse(status_code=status.HTTP_204_NO_CONTENT)
-
-    def list(self, request, *args, **kwargs):
-        """
-        获取问题列表
-        """
-        queryset = self.filter_queryset(self.get_queryset())
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-
-        serializer = self.get_serializer(queryset, many=True)
-        return OkResponse(data=serializer.data)
 
     @action(detail=True, methods=['post'], url_path='follow')
     def toggle_follow(self, request, pk=None):

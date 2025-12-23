@@ -8,6 +8,16 @@ from common.utils import (
 )
 
 
+class UserSimpleSerializer(serializers.Serializer):
+    """
+    用户简单信息序列化器（通用）
+    用于在其他模块中展示用户基本信息
+    """
+    id = serializers.UUIDField()
+    username = serializers.CharField()
+    avatar = serializers.URLField()
+
+
 class UserRegisterReqSerializer(serializers.Serializer):
     """
     用户注册请求序列化器
