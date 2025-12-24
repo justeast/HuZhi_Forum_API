@@ -4,6 +4,8 @@ from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from question.models import Question
 from question import serializers, services, filters
+from vote import services as vote_services
+from vote.serializers import VoteReqSerializer
 from common.response import OkResponse
 from common.permissions import IsOwnerOrReadOnly
 from common.viewsets import BaseModelViewSet
@@ -92,3 +94,19 @@ class QuestionViewSet(BaseModelViewSet):
         action_type = serializer.validated_data['action']
         services.toggle_follow_question(request.user, question, action_type)
         return OkResponse()
+
+    @action(detail=True, methods=['post'], url_path='vote')
+    def vote(self, request, pk=None):
+        """
+        对问题进行投票
+        """
+        question = self.get_object()
+        serializer = VoteReqSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        vote_type = serializer.validated_data['vote_type']
+        vote_services.vote_question(request.user, question, vote_type)
+        
+        # 返回更新后的问题详情
+        resp_serializer = serializers.QuestionDetailSerializer(question, context={'request': request})
+        return OkResponse(data=resp_serializer.data)

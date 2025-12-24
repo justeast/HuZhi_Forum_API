@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from question.models import Question
 from topic.models import Topic
+from vote.models import QuestionVote
+from vote import constants as vote_c
 from topic.serializers import TopicSimpleSerializer
 from base.serializers import UserSimpleSerializer
 from question import constants as c
@@ -16,12 +18,15 @@ class QuestionListSerializer(serializers.ModelSerializer):
     topics = TopicSimpleSerializer(many=True, read_only=True)
     follower_count = serializers.SerializerMethodField()
     answer_count = serializers.SerializerMethodField()
+    upvote_count = serializers.SerializerMethodField()
+    user_vote_status = serializers.SerializerMethodField()
     
     class Meta:
         model = Question
         fields = [
             'id', 'title', 'content', 'questioner', 
             'view_count', 'follower_count', 'answer_count',
+            'upvote_count', 'user_vote_status',
             'topics', 'created', 'modified'
         ]
     
@@ -36,6 +41,26 @@ class QuestionListSerializer(serializers.ModelSerializer):
         获取回答数量
         """
         return obj.answers.count()
+    
+    def get_upvote_count(self, obj):
+        """
+        获取赞同票数量
+        """
+        return QuestionVote.objects.filter(question=obj, vote_type=vote_c.UPVOTE).count()
+    
+    def get_user_vote_status(self, obj):
+        """
+        获取当前用户对该问题的投票状态
+        返回: 1=赞同, -1=反对, 0=未投票
+        """
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            try:
+                vote = QuestionVote.objects.get(user=request.user, question=obj)
+                return vote.vote_type
+            except QuestionVote.DoesNotExist:
+                return vote_c.CANCEL_VOTE
+        return vote_c.CANCEL_VOTE
 
 
 class QuestionDetailSerializer(QuestionListSerializer):

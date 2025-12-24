@@ -2,6 +2,7 @@ from rest_framework import serializers
 from answer.models import Answer
 from question.models import Question
 from vote.models import AnswerVote
+from vote import constants as vote_c
 from base.serializers import UserSimpleSerializer
 from common.exceptions import BusinessException
 from question import constants as question_c
@@ -34,7 +35,7 @@ class AnswerListSerializer(serializers.ModelSerializer):
         """
         获取赞同票数量
         """
-        return AnswerVote.objects.filter(answer=obj, vote_type=1).count()
+        return AnswerVote.objects.filter(answer=obj, vote_type=vote_c.UPVOTE).count()
     
     def get_user_vote_status(self, obj):
         """
@@ -47,8 +48,8 @@ class AnswerListSerializer(serializers.ModelSerializer):
                 vote = AnswerVote.objects.get(user=request.user, answer=obj)
                 return vote.vote_type
             except AnswerVote.DoesNotExist:
-                return 0
-        return 0
+                return vote_c.CANCEL_VOTE
+        return vote_c.CANCEL_VOTE
 
 
 class AnswerDetailSerializer(AnswerListSerializer):

@@ -1,8 +1,11 @@
 from rest_framework import status
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from answer.models import Answer
 from answer import serializers, services
+from vote import services as vote_services
+from vote.serializers import VoteReqSerializer
 from common.response import OkResponse
 from common.permissions import IsOwnerOrReadOnly
 from common.viewsets import BaseModelViewSet
@@ -79,3 +82,19 @@ class AnswerViewSet(BaseModelViewSet):
         self.check_object_permissions(request, instance)
         instance.delete()
         return OkResponse(status_code=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=['post'], url_path='vote')
+    def vote(self, request, pk=None):
+        """
+        对回答进行投票
+        """
+        answer = self.get_object()
+        serializer = VoteReqSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        vote_type = serializer.validated_data['vote_type']
+        vote_services.vote_answer(request.user, answer, vote_type)
+        
+        # 返回更新后的回答详情
+        resp_serializer = serializers.AnswerDetailSerializer(answer, context={'request': request})
+        return OkResponse(data=resp_serializer.data)
