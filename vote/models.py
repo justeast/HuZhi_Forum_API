@@ -62,3 +62,21 @@ class AnswerVote(VoteBase):
         verbose_name = "回答投票"
         verbose_name_plural = verbose_name
         unique_together = ('user', 'answer')
+
+
+class CommentVote(VoteBase):
+    """
+    针对评论的投票（通常评论只有“点赞”，但为了架构统一，依然继承 VoteBase）
+    """
+    comment = models.ForeignKey(
+        'comment.Comment',
+        on_delete=models.CASCADE,
+        related_name='votes',
+        verbose_name="所属评论"
+    )
+
+    class Meta:
+        db_table = "vote_comment"
+        verbose_name = "评论投票"
+        verbose_name_plural = verbose_name
+        unique_together = ('user', 'comment')
