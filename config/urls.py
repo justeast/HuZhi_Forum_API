@@ -25,4 +25,5 @@ urlpatterns = [
     path("question/", include("question.urls")),
     path("answer/", include("answer.urls")),
     path("comment/", include("comment.urls")),
+    path("collection/", include("collection.urls")),
 ]

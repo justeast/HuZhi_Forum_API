@@ -4,7 +4,7 @@ from rest_framework import permissions
 class IsOwnerOrReadOnly(permissions.BasePermission):
     """
     仅对象所有者可以编辑，其他人只读
-    对象需要有 questioner（Question）、creator（Topic）或 respondent（Answer）字段
+    对象需要有 questioner（Question）、creator（Topic）、respondent（Answer）或 owner（Collection）字段
     """
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
@@ -17,6 +17,8 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
             return obj.creator == request.user
         elif hasattr(obj, 'respondent'):
             return obj.respondent == request.user
+        elif hasattr(obj, 'owner'):
+            return obj.owner == request.user
         
         # 如果对象没有所有者字段，拒绝访问
         return False
@@ -43,3 +45,17 @@ class IsCommentOwnerOrAnswerAuthor(permissions.BasePermission):
             return True
         
         return False
+
+
+class IsCollectionOwnerOrPublic(permissions.BasePermission):
+    """
+    收藏夹查看权限：
+    - 公开收藏夹：任何认证用户可查看
+    - 私有收藏夹：仅owner可查看
+    """
+    def has_object_permission(self, request, view, obj):
+        # 公开收藏夹任何人可看
+        if obj.is_public:
+            return True
+        # 私有收藏夹仅owner可看
+        return obj.owner == request.user
