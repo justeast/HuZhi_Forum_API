@@ -50,14 +50,6 @@ class CollectionViewSet(BaseModelViewSet):
             return [IsAuthenticated(), IsOwnerOrReadOnly()]
         return [IsAuthenticated()]
 
-    def retrieve(self, request, *args, **kwargs):
-        """
-        获取收藏夹详情
-        """
-        instance = self.get_object()
-        serializer = self.get_serializer(instance)
-        return OkResponse(data=serializer.data)
-
     def create(self, request, *args, **kwargs):
         """
         创建收藏夹
@@ -81,15 +73,6 @@ class CollectionViewSet(BaseModelViewSet):
         collection = services.update_collection(instance, serializer.validated_data)
         resp_serializer = serializers.CollectionDetailSerializer(collection, context={'request': request})
         return OkResponse(data=resp_serializer.data)
-
-    def destroy(self, request, *args, **kwargs):
-        """
-        删除收藏夹
-        """
-        instance = self.get_object()
-        self.check_object_permissions(request, instance)
-        instance.delete()
-        return OkResponse(status_code=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=['post'], url_path='collect_answer')
     def collect_answer(self, request, pk=None):

@@ -73,15 +73,6 @@ class QuestionViewSet(BaseModelViewSet):
         resp_serializer = serializers.QuestionDetailSerializer(question, context={'request': request})
         return OkResponse(data=resp_serializer.data)
 
-    def destroy(self, request, *args, **kwargs):
-        """
-        删除问题
-        """
-        instance = self.get_object()
-        self.check_object_permissions(request, instance)
-        instance.delete()
-        return OkResponse(status_code=status.HTTP_204_NO_CONTENT)
-
     @action(detail=True, methods=['post'], url_path='follow')
     def toggle_follow(self, request, pk=None):
         """
