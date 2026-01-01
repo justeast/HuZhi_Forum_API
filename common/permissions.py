@@ -59,3 +59,13 @@ class IsCollectionOwnerOrPublic(permissions.BasePermission):
             return True
         # 私有收藏夹仅owner可看
         return obj.owner == request.user
+
+
+class IsChatParticipant(permissions.BasePermission):
+    """
+    会话参与者权限：
+    只有会话的 user1 或 user2 可以访问该会话
+    """
+    def has_object_permission(self, request, view, obj):
+        # 检查用户是否是会话的参与者
+        return obj.user1 == request.user or obj.user2 == request.user

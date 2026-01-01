@@ -26,4 +26,5 @@ urlpatterns = [
     path("answer/", include("answer.urls")),
     path("comment/", include("comment.urls")),
     path("collection/", include("collection.urls")),
+    path("chat/", include("chat.urls")),
 ]
