@@ -10,6 +10,9 @@ https://docs.djangoproject.com/en/5.2/howto/deployment/asgi/
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from channels.routing import ProtocolTypeRouter, URLRouter
+from channels.auth import AuthMiddlewareStack
+import chat.routing
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -19,4 +22,17 @@ from django.core.asgi import get_asgi_application
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 
-application = get_asgi_application()
+
+django_asgi_app = get_asgi_application()
+
+application = ProtocolTypeRouter({
+    # (HTTP 请求) -> Django 视图
+    "http": django_asgi_app,
+
+    # (WebSocket 请求) -> 自定义的路由
+    "websocket": AuthMiddlewareStack(
+        URLRouter(
+            chat.routing.websocket_urlpatterns
+        )
+    ),
+})

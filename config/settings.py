@@ -40,6 +40,8 @@ ALLOWED_HOSTS = [
 # Application definition
 
 INSTALLED_APPS = [
+    "daphne",
+    "channels",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -91,6 +93,8 @@ TEMPLATES = [
         },
     },
 ]
+
+ASGI_APPLICATION = 'config.asgi.application'
 
 WSGI_APPLICATION = "config.wsgi.application"
 
@@ -204,6 +208,17 @@ DEFAULT_FROM_EMAIL = f'乎知论坛 <{os.getenv("EMAIL_HOST_USER")}>'
 # 验证码配置
 VERIFY_CODE_EXPIRE = 300  # 验证码过期时间（秒）
 VERIFY_CODE_INTERVAL = 60  # 验证码发送间隔（秒）
+
+REDIS_DB_FOR_CHANNEL = int(os.getenv("REDIS_DB_FOR_CHANNEL"))
+REDIS_URL_FOR_CHANNEL = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB_FOR_CHANNEL}"
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [REDIS_URL_FOR_CHANNEL],
+        },
+    },
+}
 
 LOGGING = {
     'version': 1,
