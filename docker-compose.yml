@@ -30,8 +30,10 @@ services:
     command: --default-authentication-plugin=mysql_native_password --innodb-buffer-pool-size=256M --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     environment:
       MYSQL_DATABASE: ${HUZHI_MYSQL_NAME}
-      MYSQL_USER: ${HUZHI_MYSQL_USER}
-      MYSQL_PASSWORD: ${HUZHI_MYSQL_PASSWORD}
+      # 以下两个是用来设置非root的普通用户的
+      # MYSQL_USER: ${HUZHI_MYSQL_USER}
+      # MYSQL_PASSWORD: ${HUZHI_MYSQL_PASSWORD}
+      # 若使用root用户只需设置这个即可
       MYSQL_ROOT_PASSWORD: ${HUZHI_MYSQL_PASSWORD}
     volumes:
       - db_data:/var/lib/mysql
@@ -52,7 +54,7 @@ services:
     image: redis:alpine
     container_name: huzhi_redis
     restart: always
-    command: redis-server --requirepass ${HUZHI_REDIS_PASSWORD}
+    command: redis-server --requirepass ${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
     networks:
