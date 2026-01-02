@@ -8,7 +8,7 @@ services:
     command: >
       sh -c "uv run manage.py migrate &&
              uv run manage.py collectstatic --noinput &&
-             daphne -b 0.0.0.0 -p 8013 config.asgi:application"
+             uv run daphne -b 0.0.0.0 -p 8013 config.asgi:application"
     volumes:
       - static_volume:/app/static_root  # 映射静态文件给 Nginx
     env_file:
