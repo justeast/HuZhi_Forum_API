@@ -1,3 +1,4 @@
+from django.db.models import Count, Q
 from rest_framework import serializers
 from question.models import Question
 from topic.models import Topic
@@ -5,6 +6,7 @@ from vote.models import QuestionVote
 from vote import constants as vote_c
 from topic.serializers import TopicSimpleSerializer
 from base.serializers import UserSimpleSerializer
+from answer.serializers import AnswerSimpleSerializer
 from question import constants as c
 from topic import constants as topic_c
 from common.exceptions import BusinessException
@@ -20,13 +22,14 @@ class QuestionListSerializer(serializers.ModelSerializer):
     answer_count = serializers.SerializerMethodField()
     upvote_count = serializers.SerializerMethodField()
     user_vote_status = serializers.SerializerMethodField()
+    top_answer = serializers.SerializerMethodField()
     
     class Meta:
         model = Question
         fields = [
             'id', 'title', 'content', 'questioner', 
             'view_count', 'follower_count', 'answer_count',
-            'upvote_count', 'user_vote_status',
+            'upvote_count', 'user_vote_status', 'top_answer',
             'topics', 'created', 'modified'
         ]
     
@@ -61,6 +64,18 @@ class QuestionListSerializer(serializers.ModelSerializer):
             except QuestionVote.DoesNotExist:
                 return vote_c.CANCEL_VOTE
         return vote_c.CANCEL_VOTE
+    
+    def get_top_answer(self, obj):
+        """
+        获取该问题下最热门的一个回答（按赞同数排序）
+        """
+        top = obj.answers.annotate(
+            upvotes=Count('votes', filter=Q(votes__vote_type=vote_c.UPVOTE))
+        ).order_by('-upvotes').first()
+        
+        if top:
+            return AnswerSimpleSerializer(top, context=self.context).data
+        return None
 
 
 class QuestionDetailSerializer(QuestionListSerializer):

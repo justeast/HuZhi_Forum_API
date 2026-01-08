@@ -8,34 +8,33 @@ from common.exceptions import BusinessException
 from question import constants as question_c
 
 
-class AnswerListSerializer(serializers.ModelSerializer):
+class AnswerSimpleSerializer(serializers.ModelSerializer):
     """
-    回答列表序列化器
+    回答简单序列化器（用于问题列表中的 top_answer 字段）
     """
     respondent = UserSimpleSerializer(read_only=True)
-    comment_count = serializers.SerializerMethodField()
     upvote_count = serializers.SerializerMethodField()
+    comment_count = serializers.SerializerMethodField()
     user_vote_status = serializers.SerializerMethodField()
     
     class Meta:
         model = Answer
         fields = [
             'id', 'content', 'respondent',
-            'comment_count', 'upvote_count', 'user_vote_status',
-            'created', 'modified'
+            'upvote_count', 'comment_count', 'user_vote_status'
         ]
-    
-    def get_comment_count(self, obj):
-        """
-        获取评论数量
-        """
-        return obj.comments.count()
     
     def get_upvote_count(self, obj):
         """
         获取赞同票数量
         """
         return AnswerVote.objects.filter(answer=obj, vote_type=vote_c.UPVOTE).count()
+    
+    def get_comment_count(self, obj):
+        """
+        获取评论数量
+        """
+        return obj.comments.count()
     
     def get_user_vote_status(self, obj):
         """
@@ -50,6 +49,14 @@ class AnswerListSerializer(serializers.ModelSerializer):
             except AnswerVote.DoesNotExist:
                 return vote_c.CANCEL_VOTE
         return vote_c.CANCEL_VOTE
+
+
+class AnswerListSerializer(AnswerSimpleSerializer):
+    """
+    回答列表序列化器（继承简单序列化器，新增时间字段）
+    """
+    class Meta(AnswerSimpleSerializer.Meta):
+        fields = AnswerSimpleSerializer.Meta.fields + ['created', 'modified']
 
 
 class AnswerDetailSerializer(AnswerListSerializer):
