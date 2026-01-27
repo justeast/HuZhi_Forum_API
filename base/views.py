@@ -2,7 +2,9 @@ from rest_framework.views import APIView
 from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
+from django.db.models import BooleanField, Exists, OuterRef, Prefetch, Value
 from common.response import OkResponse
+from common.views import PaginatedListAPIView
 from base.serializers import (
     UserRegisterReqSerializer,
     UserRegisterRespSerializer,
@@ -14,6 +16,10 @@ from base.serializers import (
     UserProfileSerializer,
 )
 from base import services
+from question.models import Question
+from question.serializers import QuestionListSerializer
+from topic.models import Topic
+from topic.serializers import TopicListSerializer
 
 
 class UserRegisterView(APIView):
@@ -128,3 +134,42 @@ class UserProfileView(RetrieveUpdateAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return OkResponse(data=serializer.data)
+
+
+class UserFollowingTopicsView(PaginatedListAPIView):
+    """
+    用户关注的话题列表
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = TopicListSerializer
+
+    def get_queryset(self):
+        return (
+            Topic.objects.filter(followers=self.request.user)
+            .select_related('creator')
+            .prefetch_related('questions')
+            .annotate(is_following=Value(True, output_field=BooleanField()))
+            .order_by('-modified', '-created')
+        )
+
+
+class UserFollowingQuestionsView(PaginatedListAPIView):
+    """
+    用户关注的问题列表
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = QuestionListSerializer
+
+    def get_queryset(self):
+        # 为嵌套话题预取注解 is_following，避免 TopicSimpleSerializer 触发 N+1
+        topic_is_following_expr = Exists(
+            Topic.objects.filter(pk=OuterRef("pk"), followers=self.request.user)
+        )
+        topics_qs = Topic.objects.annotate(is_following=topic_is_following_expr)
+
+        return (
+            Question.objects.filter(followers=self.request.user)
+            .select_related('questioner')
+            .prefetch_related(Prefetch('topics', queryset=topics_qs), 'followers')
+            .order_by('-modified', '-created')
+        )
