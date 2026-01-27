@@ -1,9 +1,11 @@
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from django.db.models import BooleanField, Exists, OuterRef, Prefetch, Value
 from django_filters.rest_framework import DjangoFilterBackend
 from question.models import Question
 from question import serializers, services, filters
+from topic.models import Topic
 from vote import services as vote_services
 from vote.serializers import VoteReqSerializer
 from common.response import OkResponse
@@ -16,9 +18,25 @@ class QuestionViewSet(BaseModelViewSet):
     问题视图集
     """
     permission_classes = [IsAuthenticated]
-    queryset = Question.objects.select_related('questioner').prefetch_related('topics', 'followers')
     filter_backends = [DjangoFilterBackend]
     filterset_class = filters.QuestionFilter
+
+    def get_queryset(self):
+        """
+        重写 queryset：预取 topics 时注解 is_following，避免嵌套话题序列化出现 N+1
+        """
+        if self.request.user and self.request.user.is_authenticated:
+            is_following_expr = Exists(
+                Topic.objects.filter(pk=OuterRef("pk"), followers=self.request.user)
+            )
+        else:
+            is_following_expr = Value(False, output_field=BooleanField())
+
+        topics_qs = Topic.objects.annotate(is_following=is_following_expr)
+        return (
+            Question.objects.select_related('questioner')
+            .prefetch_related(Prefetch('topics', queryset=topics_qs), 'followers')
+        )
 
     def get_serializer_class(self):
         """

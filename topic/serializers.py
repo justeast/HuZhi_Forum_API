@@ -5,16 +5,50 @@ from common.exceptions import BusinessException
 from base.serializers import UserSimpleSerializer
 
 
-class TopicSimpleSerializer(serializers.ModelSerializer):
+class TopicFollowStateSerializer(serializers.ModelSerializer):
+    """
+    话题关注态序列化器基类
+    提供 is_following 字段，供列表/嵌套场景复用
+    """
+    is_following = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Topic
+        fields = ['id', 'name', 'icon', 'introduction', 'is_following']
+
+    def get_is_following(self, obj):
+        """
+        当前用户是否关注该话题
+        """
+        # 优先读取视图层 queryset 中 annotate 注入的 is_following 字段：
+        # - 该方式通过 Exists 在数据库层计算布尔值，避免 N+1
+        # - 且不会像 prefetch followers 那样加载大量无关用户数据
+        annotated = getattr(obj, 'is_following', None)
+        if isinstance(annotated, bool):
+            return annotated
+
+        # 兜底逻辑：
+        # 并非所有序列化场景都一定来自带注解的 queryset，例如：
+        # - create/update 中手动构造 serializer 时传入的实例（不一定带注解）
+        # - 其他模块/其他查询路径复用该序列化器但未做 annotate
+        # - 单元测试或脚本中直接序列化模型实例
+        # 此时退回到最朴素的 exists() 查询，保证字段始终可用
+        request = self.context.get('request')
+        if not request or not request.user or not request.user.is_authenticated:
+            return False
+
+        return obj.followers.filter(id=request.user.id).exists()
+
+
+class TopicSimpleSerializer(TopicFollowStateSerializer):
     """
     话题简单序列化器
     """
-    class Meta:
-        model = Topic
-        fields = ['id', 'name', 'icon', 'introduction']
+    class Meta(TopicFollowStateSerializer.Meta):
+        fields = TopicFollowStateSerializer.Meta.fields
 
 
-class TopicListSerializer(serializers.ModelSerializer):
+class TopicListSerializer(TopicFollowStateSerializer):
     """
     话题列表序列化器
     """
@@ -22,11 +56,9 @@ class TopicListSerializer(serializers.ModelSerializer):
     follower_count = serializers.SerializerMethodField()
     question_count = serializers.SerializerMethodField()
     
-    class Meta:
-        model = Topic
-        fields = [
-            'id', 'name', 'introduction', 'icon', 'creator',
-            'follower_count', 'question_count', 'created', 'modified'
+    class Meta(TopicFollowStateSerializer.Meta):
+        fields = TopicFollowStateSerializer.Meta.fields + [
+            'creator', 'follower_count', 'question_count', 'created', 'modified'
         ]
     
     def get_follower_count(self, obj):
@@ -44,21 +76,8 @@ class TopicListSerializer(serializers.ModelSerializer):
 
 class TopicDetailSerializer(TopicListSerializer):
     """
-    话题详情序列化器（继承列表序列化器，新增 is_following 字段）
+    话题详情序列化器（继承列表序列化器）
     """
-    is_following = serializers.SerializerMethodField()
-    
-    class Meta(TopicListSerializer.Meta):
-        fields = TopicListSerializer.Meta.fields + ['is_following']
-    
-    def get_is_following(self, obj):
-        """
-        当前用户是否关注该话题
-        """
-        request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            return obj.followers.filter(id=request.user.id).exists()
-        return False
 
 
 class TopicUpdateSerializer(serializers.ModelSerializer):

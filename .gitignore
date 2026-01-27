@@ -149,3 +149,5 @@ cython_debug/
 .idea/workspace.xml
 
 .qoder
+
+AGENTS.md

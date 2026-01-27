@@ -1,6 +1,7 @@
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from django.db.models import BooleanField, Exists, OuterRef, Value
 from rest_framework.filters import SearchFilter
 from topic.models import Topic
 from topic import serializers, services
@@ -13,10 +14,26 @@ class TopicViewSet(BaseModelViewSet):
     """
     话题视图集
     """
-    queryset = Topic.objects.select_related('creator').prefetch_related('followers', 'questions')
     permission_classes = [IsAuthenticated]
     filter_backends = [SearchFilter]
     search_fields = ['name']
+
+    def get_queryset(self):
+        """
+        重写 queryset：为每个话题注解 is_following，避免 N+1 且不预取大量 followers 用户
+        """
+        if self.request.user and self.request.user.is_authenticated:
+            is_following_expr = Exists(
+                Topic.objects.filter(pk=OuterRef("pk"), followers=self.request.user)
+            )
+        else:
+            is_following_expr = Value(False, output_field=BooleanField())
+
+        return (
+            Topic.objects.select_related('creator')
+            .prefetch_related('questions')
+            .annotate(is_following=is_following_expr)
+        )
 
     def get_serializer_class(self):
         """
