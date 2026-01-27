@@ -102,7 +102,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'phone', 'avatar', 'bio', 'created', 'modified']
+        fields = ['id', 'username', 'email', 'phone', 'avatar', 'cover_image', 'bio', 'created', 'modified']
         read_only_fields = ['id', 'created', 'modified']
         # 禁用ModelSerializer自动添加的UniqueValidator，使用自定义校验
         extra_kwargs = {

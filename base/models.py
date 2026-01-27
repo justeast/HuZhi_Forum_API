@@ -23,6 +23,8 @@ class User(AbstractUser, TimeStampedModel):
 
     avatar = models.URLField(max_length=500,blank=True,null=True,verbose_name="头像URL")
 
+    cover_image = models.URLField(max_length=500, blank=True, null=True, verbose_name="封面背景图URL")
+
     bio = models.TextField(max_length=500,blank=True,null=True,verbose_name="个人简介")
 
     class Meta:
