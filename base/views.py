@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
+from rest_framework.filters import SearchFilter
 from django.db.models import BooleanField, Exists, OuterRef, Prefetch, Value
 from common.response import OkResponse
 from common.views import PaginatedListAPIView
@@ -142,6 +143,8 @@ class UserFollowingTopicsView(PaginatedListAPIView):
     """
     permission_classes = [IsAuthenticated]
     serializer_class = TopicListSerializer
+    filter_backends = [SearchFilter]
+    search_fields = ['name']
 
     def get_queryset(self):
         return (
@@ -159,6 +162,8 @@ class UserFollowingQuestionsView(PaginatedListAPIView):
     """
     permission_classes = [IsAuthenticated]
     serializer_class = QuestionListSerializer
+    filter_backends = [SearchFilter]
+    search_fields = ['title']
 
     def get_queryset(self):
         # 为嵌套话题预取注解 is_following，避免 TopicSimpleSerializer 触发 N+1

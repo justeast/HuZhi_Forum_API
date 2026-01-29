@@ -1,6 +1,7 @@
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.filters import SearchFilter
 from django.db.models import BooleanField, Exists, OuterRef, Prefetch, Value
 from django_filters.rest_framework import DjangoFilterBackend
 from question.models import Question
@@ -18,8 +19,9 @@ class QuestionViewSet(BaseModelViewSet):
     问题视图集
     """
     permission_classes = [IsAuthenticated]
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_class = filters.QuestionFilter
+    search_fields = ['title']
 
     def get_queryset(self):
         """

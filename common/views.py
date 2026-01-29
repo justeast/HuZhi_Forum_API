@@ -1,4 +1,5 @@
 from rest_framework.views import APIView
+from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny
 from common.response import OkResponse
 from common.pagination import StandardPagination
@@ -16,7 +17,7 @@ class UploadTokenView(APIView):
         return OkResponse(data=credential)
 
 
-class PaginatedListAPIView(APIView):
+class PaginatedListAPIView(GenericAPIView):
     """
     通用分页列表基类
     - 子类只需要提供 serializer_class 和 get_queryset()
@@ -26,28 +27,16 @@ class PaginatedListAPIView(APIView):
     pagination_class = StandardPagination
     serializer_class = None
 
-    def get_queryset(self):
-        raise NotImplementedError("子类必须实现 get_queryset()")
-
-    def get_serializer_class(self):
-        if self.serializer_class is None:
-            raise NotImplementedError("子类必须设置 serializer_class 或实现 get_serializer_class()")
-        return self.serializer_class
-
-    def get_serializer_context(self, request):
+    def get(self, request, *args, **kwargs):
         """
-        统一注入 request，便于序列化器计算用户态字段
+        支持 filter_backends（如 SearchFilter），并统一分页返回格式
         """
-        return {"request": request}
+        queryset = self.filter_queryset(self.get_queryset())
 
-    def get(self, request):
-        queryset = self.get_queryset()
-
-        paginator = self.pagination_class()
-        page = paginator.paginate_queryset(queryset, request, view=self)
+        page = self.paginate_queryset(queryset)
         if page is not None:
-            serializer = self.get_serializer_class()(page, many=True, context=self.get_serializer_context(request))
-            return paginator.get_paginated_response(serializer.data)
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
 
-        serializer = self.get_serializer_class()(queryset, many=True, context=self.get_serializer_context(request))
+        serializer = self.get_serializer(queryset, many=True)
         return OkResponse(data=serializer.data)
