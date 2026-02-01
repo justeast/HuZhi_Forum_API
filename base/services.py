@@ -43,6 +43,7 @@ def authenticate_user(account: str, password: str) -> dict:
         'refresh': str(refresh),
         'id': str(user.id),
         'username': user.username,
+        'avatar': user.avatar,
     }
 
 
