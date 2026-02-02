@@ -15,6 +15,7 @@ from base.serializers import (
     PwdResetReqSerializer,
     PwdChangeReqSerializer,
     UserProfileSerializer,
+    UserAchievementsRespSerializer,
 )
 from base import services
 from question.models import Question
@@ -178,3 +179,16 @@ class UserFollowingQuestionsView(PaginatedListAPIView):
             .prefetch_related(Prefetch('topics', queryset=topics_qs), 'followers')
             .order_by('-modified', '-created')
         )
+
+
+class UserAchievementsView(APIView):
+    """
+    用户的个人成就
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        data = services.get_user_achievements(request.user)
+        serializer = UserAchievementsRespSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        return OkResponse(data=serializer.validated_data)

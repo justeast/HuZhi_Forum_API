@@ -11,4 +11,5 @@ urlpatterns = [
     path('profile/', views.UserProfileView.as_view(), name='profile'),
     path('following/topics/', views.UserFollowingTopicsView.as_view(), name='following_topics'),
     path('following/questions/', views.UserFollowingQuestionsView.as_view(), name='following_questions'),
+    path('achievements/', views.UserAchievementsView.as_view(), name='user_achievements'),
 ]

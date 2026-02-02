@@ -5,6 +5,9 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from base.models import User
 from base import constants as c
+from answer.models import Answer
+from vote import constants as vote_c
+from vote.models import QuestionVote, AnswerVote
 from common.exceptions import BusinessException
 from common.redis_client import get_redis_client
 from common.utils import generate_verify_code
@@ -133,3 +136,26 @@ def change_password(user: User, old_password: str, new_password: str) -> None:
     # 更新密码
     user.set_password(new_password)
     user.save()
+
+
+def get_user_achievements(user: User) -> dict:
+    """
+    统计用户个人成就
+    - 获得赞同：只统计 UPVOTE（包含对问题和回答的赞同）
+    - 作出：回答数量
+    """
+    answer_count = Answer.objects.filter(respondent=user).count()
+
+    question_upvote_count = QuestionVote.objects.filter(
+        vote_type=vote_c.UPVOTE,
+        question__questioner=user,
+    ).count()
+    answer_upvote_count = AnswerVote.objects.filter(
+        vote_type=vote_c.UPVOTE,
+        answer__respondent=user,
+    ).count()
+
+    return {
+        'agree_count': question_upvote_count + answer_upvote_count,
+        'answer_count': answer_count,
+    }

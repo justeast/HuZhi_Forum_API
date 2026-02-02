@@ -128,3 +128,11 @@ class UserProfileSerializer(serializers.ModelSerializer):
         校验手机号唯一性（排除当前用户）
         """
         return validate_phone_unique(value, exclude_pk=self.instance.pk)
+
+
+class UserAchievementsRespSerializer(serializers.Serializer):
+    """
+    用户个人成就响应序列化器
+    """
+    agree_count = serializers.IntegerField()
+    answer_count = serializers.IntegerField()
