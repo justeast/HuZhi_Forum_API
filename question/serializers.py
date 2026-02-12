@@ -6,10 +6,20 @@ from vote.models import QuestionVote
 from vote import constants as vote_c
 from topic.serializers import TopicSimpleSerializer
 from base.serializers import UserSimpleSerializer
-from answer.serializers import AnswerSimpleSerializer
 from question import constants as c
 from topic import constants as topic_c
 from common.exceptions import BusinessException
+
+
+class QuestionSimpleSerializer(serializers.ModelSerializer):
+    """
+    问题简单序列化器
+    用于在其他模块中展示问题基础信息（例如：回答列表展示所属问题标题）
+    """
+
+    class Meta:
+        model = Question
+        fields = ['id', 'title']
 
 
 class QuestionListSerializer(serializers.ModelSerializer):
@@ -69,6 +79,9 @@ class QuestionListSerializer(serializers.ModelSerializer):
         """
         获取该问题下最热门的一个回答（按赞同数排序）
         """
+        # 这里使用局部导入，避免与 question/answer 序列化器之间形成循环依赖
+        from answer.serializers import AnswerSimpleSerializer
+
         top = obj.answers.annotate(
             upvotes=Count('votes', filter=Q(votes__vote_type=vote_c.UPVOTE))
         ).order_by('-upvotes').first()

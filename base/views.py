@@ -18,6 +18,8 @@ from base.serializers import (
     UserAchievementsRespSerializer,
 )
 from base import services
+from answer.models import Answer
+from answer.serializers import AnswerWithQuestionSerializer
 from question.models import Question
 from question.serializers import QuestionListSerializer
 from topic.models import Topic
@@ -192,3 +194,41 @@ class UserAchievementsView(APIView):
         serializer = UserAchievementsRespSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         return OkResponse(data=serializer.validated_data)
+
+
+class UserQuestionsView(PaginatedListAPIView):
+    """
+    我的提问列表
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = QuestionListSerializer
+
+    def get_queryset(self):
+        # 为嵌套话题预取注解 is_following，避免 TopicSimpleSerializer 触发 N+1
+        topic_is_following_expr = Exists(
+            Topic.objects.filter(pk=OuterRef("pk"), followers=self.request.user)
+        )
+        topics_qs = Topic.objects.annotate(is_following=topic_is_following_expr)
+
+        return (
+            Question.objects.filter(questioner=self.request.user)
+            .select_related('questioner')
+            .prefetch_related(Prefetch('topics', queryset=topics_qs), 'followers')
+            .order_by('-modified', '-created')
+        )
+
+
+class UserAnswersView(PaginatedListAPIView):
+    """
+    我的回答列表（包含所属问题标题）
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = AnswerWithQuestionSerializer
+
+    def get_queryset(self):
+        return (
+            Answer.objects.filter(respondent=self.request.user)
+            .select_related('respondent', 'question')
+            .prefetch_related('comments')
+            .order_by('-modified', '-created')
+        )

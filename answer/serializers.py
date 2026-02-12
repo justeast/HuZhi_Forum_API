@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from answer.models import Answer
 from question.models import Question
+from question.serializers import QuestionSimpleSerializer
 from vote.models import AnswerVote
 from vote import constants as vote_c
 from base.serializers import UserSimpleSerializer
@@ -57,6 +58,17 @@ class AnswerListSerializer(AnswerSimpleSerializer):
     """
     class Meta(AnswerSimpleSerializer.Meta):
         fields = AnswerSimpleSerializer.Meta.fields + ['created', 'modified']
+
+
+class AnswerWithQuestionSerializer(AnswerListSerializer):
+    """
+    回答列表（携带所属问题简要信息）
+    用于“我的回答”等需要展示问题标题的场景
+    """
+    question = QuestionSimpleSerializer(read_only=True)
+
+    class Meta(AnswerListSerializer.Meta):
+        fields = AnswerListSerializer.Meta.fields + ['question']
 
 
 class AnswerDetailSerializer(AnswerListSerializer):
