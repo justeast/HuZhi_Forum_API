@@ -3,7 +3,7 @@ from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
 from rest_framework.filters import SearchFilter
-from django.db.models import BooleanField, Exists, OuterRef, Prefetch, Value
+from django.db.models import BooleanField, Value
 from common.response import OkResponse
 from common.views import PaginatedListAPIView
 from base.serializers import (
@@ -22,6 +22,7 @@ from answer.models import Answer
 from answer.serializers import AnswerWithQuestionSerializer
 from question.models import Question
 from question.serializers import QuestionListSerializer
+from question import services as question_services
 from topic.models import Topic
 from topic.serializers import TopicListSerializer
 
@@ -169,18 +170,8 @@ class UserFollowingQuestionsView(PaginatedListAPIView):
     search_fields = ['title']
 
     def get_queryset(self):
-        # 为嵌套话题预取注解 is_following，避免 TopicSimpleSerializer 触发 N+1
-        topic_is_following_expr = Exists(
-            Topic.objects.filter(pk=OuterRef("pk"), followers=self.request.user)
-        )
-        topics_qs = Topic.objects.annotate(is_following=topic_is_following_expr)
-
-        return (
-            Question.objects.filter(followers=self.request.user)
-            .select_related('questioner')
-            .prefetch_related(Prefetch('topics', queryset=topics_qs), 'followers')
-            .order_by('-modified', '-created')
-        )
+        base_qs = Question.objects.filter(followers=self.request.user)
+        return question_services.build_question_list_queryset(self.request.user, base_qs)
 
 
 class UserAchievementsView(APIView):
@@ -204,18 +195,8 @@ class UserQuestionsView(PaginatedListAPIView):
     serializer_class = QuestionListSerializer
 
     def get_queryset(self):
-        # 为嵌套话题预取注解 is_following，避免 TopicSimpleSerializer 触发 N+1
-        topic_is_following_expr = Exists(
-            Topic.objects.filter(pk=OuterRef("pk"), followers=self.request.user)
-        )
-        topics_qs = Topic.objects.annotate(is_following=topic_is_following_expr)
-
-        return (
-            Question.objects.filter(questioner=self.request.user)
-            .select_related('questioner')
-            .prefetch_related(Prefetch('topics', queryset=topics_qs), 'followers')
-            .order_by('-modified', '-created')
-        )
+        base_qs = Question.objects.filter(questioner=self.request.user)
+        return question_services.build_question_list_queryset(self.request.user, base_qs)
 
 
 class UserAnswersView(PaginatedListAPIView):

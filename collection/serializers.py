@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from collection.models import Collection
 from answer.models import Answer
-from answer.serializers import AnswerListSerializer
+from answer.serializers import AnswerWithQuestionSerializer
 from base.serializers import UserSimpleSerializer
 from answer import constants as answer_c
 from common.exceptions import BusinessException
@@ -68,9 +68,9 @@ class CollectAnswerRespSerializer(serializers.Serializer):
     answer_count = serializers.IntegerField()
 
 
-class CollectionAnswerListSerializer(AnswerListSerializer):
+class CollectionAnswerListSerializer(AnswerWithQuestionSerializer):
     """
-    收藏夹内回答列表序列化器（复用 AnswerListSerializer）
+    收藏夹内回答列表序列化器（复用 AnswerWithQuestionSerializer）
     """
-    class Meta(AnswerListSerializer.Meta):
-        fields = AnswerListSerializer.Meta.fields
+    class Meta(AnswerWithQuestionSerializer.Meta):
+        fields = AnswerWithQuestionSerializer.Meta.fields

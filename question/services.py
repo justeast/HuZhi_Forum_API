@@ -1,7 +1,31 @@
 from django.db import transaction
+from django.db.models import BooleanField, Exists, OuterRef, Prefetch, Value
 from question.models import Question
 from topic.models import Topic
 from question import constants as c
+
+
+def build_question_list_queryset(user, queryset):
+    """
+    构造问题列表查询集（用于列表类接口的统一预取/排序）
+    - 为 topics 预取注解 is_following，避免序列化时 N+1
+    - 统一按 -modified、-created 排序
+    """
+    if user and getattr(user, 'is_authenticated', False):
+        topic_is_following_expr = Exists(
+            Topic.objects.filter(pk=OuterRef("pk"), followers=user)
+        )
+    else:
+        topic_is_following_expr = Value(False, output_field=BooleanField())
+
+    topics_qs = Topic.objects.annotate(is_following=topic_is_following_expr)
+
+    return (
+        queryset
+        .select_related('questioner')
+        .prefetch_related(Prefetch('topics', queryset=topics_qs), 'followers')
+        .order_by('-modified', '-created')
+    )
 
 
 def create_question(user, validated_data: dict) -> Question:
