@@ -1,11 +1,13 @@
 from rest_framework import serializers
 from base.models import User
+from base.models import UserFollow
 from common.utils import (
     validate_password,
     validate_username_unique,
     validate_email_unique,
     validate_phone_unique,
 )
+from base import constants as c
 
 
 class UserSimpleSerializer(serializers.Serializer):
@@ -16,6 +18,17 @@ class UserSimpleSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     username = serializers.CharField()
     avatar = serializers.URLField()
+
+
+class UserCardSerializer(serializers.ModelSerializer):
+    """
+    用户卡片序列化器
+    用于关注/粉丝列表展示用户基础信息
+    """
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'avatar', 'bio']
 
 
 class UserRegisterReqSerializer(serializers.Serializer):
@@ -136,3 +149,34 @@ class UserAchievementsRespSerializer(serializers.Serializer):
     """
     agree_count = serializers.IntegerField()
     answer_count = serializers.IntegerField()
+
+
+class UserFollowReqSerializer(serializers.Serializer):
+    """
+    用户关注/取消关注请求序列化器
+    """
+    action = serializers.ChoiceField(choices=c.USER_FOLLOW_ACTION_CHOICES, required=True)
+
+
+class UserFollowingListSerializer(serializers.ModelSerializer):
+    """
+    我关注的用户列表项
+    """
+    user = UserCardSerializer(source='following', read_only=True)
+    followed_at = serializers.DateTimeField(source='created', read_only=True)
+
+    class Meta:
+        model = UserFollow
+        fields = ['user', 'followed_at']
+
+
+class UserFollowersListSerializer(serializers.ModelSerializer):
+    """
+    关注我的用户列表项
+    """
+    user = UserCardSerializer(source='follower', read_only=True)
+    followed_at = serializers.DateTimeField(source='created', read_only=True)
+
+    class Meta:
+        model = UserFollow
+        fields = ['user', 'followed_at']

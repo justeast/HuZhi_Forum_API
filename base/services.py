@@ -4,6 +4,7 @@ from django.core.mail import send_mail
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from base.models import User
+from base.models import UserFollow
 from base import constants as c
 from answer.models import Answer
 from vote import constants as vote_c
@@ -159,3 +160,23 @@ def get_user_achievements(user: User) -> dict:
         'agree_count': question_upvote_count + answer_upvote_count,
         'answer_count': answer_count,
     }
+
+
+def toggle_follow_user(user: User, target_user_id, action: int) -> None:
+    """
+    关注/取消关注用户
+    :param user: 当前登录用户
+    :param target_user_id: 目标用户ID（被关注/取关的人）
+    :param action: 1=关注，2=取消关注
+    """
+    target_user = User.objects.filter(id=target_user_id).first()
+    if not target_user:
+        raise BusinessException(code=c.USER_NOT_FOUND, msg=c.USER_NOT_FOUND_MSG)
+
+    if user.id == target_user.id:
+        raise BusinessException(code=c.CANNOT_FOLLOW_SELF, msg=c.CANNOT_FOLLOW_SELF_MSG)
+
+    if action == c.USER_FOLLOW_ACTION:
+        UserFollow.objects.get_or_create(follower=user, following=target_user)
+    else:
+        UserFollow.objects.filter(follower=user, following=target_user).delete()

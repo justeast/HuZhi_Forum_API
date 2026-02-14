@@ -16,7 +16,11 @@ from base.serializers import (
     PwdChangeReqSerializer,
     UserProfileSerializer,
     UserAchievementsRespSerializer,
+    UserFollowReqSerializer,
+    UserFollowingListSerializer,
+    UserFollowersListSerializer,
 )
+from base import constants as c
 from base import services
 from answer.models import Answer
 from answer.serializers import AnswerWithQuestionSerializer
@@ -25,6 +29,7 @@ from question.serializers import QuestionListSerializer
 from question import services as question_services
 from topic.models import Topic
 from topic.serializers import TopicListSerializer
+from base.models import UserFollow
 
 
 class UserRegisterView(APIView):
@@ -185,6 +190,54 @@ class UserAchievementsView(APIView):
         serializer = UserAchievementsRespSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         return OkResponse(data=serializer.validated_data)
+
+
+class UserFollowView(APIView):
+    """
+    关注/取消关注用户
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, user_id):
+        serializer = UserFollowReqSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        services.toggle_follow_user(
+            user=request.user,
+            target_user_id=user_id,
+            action=serializer.validated_data['action'],
+        )
+        return OkResponse()
+
+
+class UserFollowingUsersView(PaginatedListAPIView):
+    """
+    我关注的用户列表
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserFollowingListSerializer
+
+    def get_queryset(self):
+        return (
+            UserFollow.objects.filter(follower=self.request.user)
+            .select_related('following')
+            .order_by('-created')
+        )
+
+
+class UserFollowersUsersView(PaginatedListAPIView):
+    """
+    关注我的用户列表
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserFollowersListSerializer
+
+    def get_queryset(self):
+        return (
+            UserFollow.objects.filter(following=self.request.user)
+            .select_related('follower')
+            .order_by('-created')
+        )
 
 
 class UserQuestionsView(PaginatedListAPIView):

@@ -12,6 +12,7 @@ EMAIL_SEND_FAILED = 10007  # 邮件发送失败
 USERNAME_ALREADY_EXISTS = 10008  # 用户名已存在
 EMAIL_ALREADY_EXISTS = 10009  # 邮箱已存在
 PHONE_ALREADY_EXISTS = 10010  # 手机号已存在
+CANNOT_FOLLOW_SELF = 10011  # 不能关注自己
 
 # 错误消息
 PASSWORD_FORMAT_ERROR_MSG = "密码需包含大小写字母和数字，长度至少8位"
@@ -24,6 +25,16 @@ EMAIL_SEND_FAILED_MSG = "邮件发送失败，请稍后重试"
 USERNAME_ALREADY_EXISTS_MSG = "该用户名已被使用"
 EMAIL_ALREADY_EXISTS_MSG = "该邮箱已被使用"
 PHONE_ALREADY_EXISTS_MSG = "该手机号已被使用"
+CANNOT_FOLLOW_SELF_MSG = "不能关注自己"
+
+# 用户关注操作常量
+USER_FOLLOW_ACTION = 1  # 关注
+USER_UNFOLLOW_ACTION = 2  # 取消关注
+
+USER_FOLLOW_ACTION_CHOICES = (
+    (USER_FOLLOW_ACTION, '关注'),
+    (USER_UNFOLLOW_ACTION, '取消关注'),
+)
 
 # Redis Key前缀
 REDIS_KEY_PWD_RESET_CODE = "pwd_reset_code:"  # 密码重置验证码
