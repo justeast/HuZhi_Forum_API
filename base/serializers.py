@@ -164,10 +164,11 @@ class UserFollowingListSerializer(serializers.ModelSerializer):
     """
     user = UserCardSerializer(source='following', read_only=True)
     followed_at = serializers.DateTimeField(source='created', read_only=True)
+    is_mutual = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = UserFollow
-        fields = ['user', 'followed_at']
+        fields = ['user', 'followed_at', 'is_mutual']
 
 
 class UserFollowersListSerializer(serializers.ModelSerializer):
@@ -176,7 +177,8 @@ class UserFollowersListSerializer(serializers.ModelSerializer):
     """
     user = UserCardSerializer(source='follower', read_only=True)
     followed_at = serializers.DateTimeField(source='created', read_only=True)
+    is_mutual = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = UserFollow
-        fields = ['user', 'followed_at']
+        fields = ['user', 'followed_at', 'is_mutual']

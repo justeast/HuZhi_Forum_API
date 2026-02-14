@@ -3,7 +3,7 @@ from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
 from rest_framework.filters import SearchFilter
-from django.db.models import BooleanField, Value
+from django.db.models import BooleanField, Exists, OuterRef, Value
 from common.response import OkResponse
 from common.views import PaginatedListAPIView
 from base.serializers import (
@@ -220,6 +220,13 @@ class UserFollowingUsersView(PaginatedListAPIView):
     def get_queryset(self):
         return (
             UserFollow.objects.filter(follower=self.request.user)
+            # 是否互关：对方也关注了我
+            .annotate(is_mutual=Exists(
+                UserFollow.objects.filter(
+                    follower_id=OuterRef('following_id'),
+                    following=self.request.user,
+                )
+            ))
             .select_related('following')
             .order_by('-created')
         )
@@ -235,6 +242,13 @@ class UserFollowersUsersView(PaginatedListAPIView):
     def get_queryset(self):
         return (
             UserFollow.objects.filter(following=self.request.user)
+            # 是否互关：我也关注了对方
+            .annotate(is_mutual=Exists(
+                UserFollow.objects.filter(
+                    follower=self.request.user,
+                    following_id=OuterRef('follower_id'),
+                )
+            ))
             .select_related('follower')
             .order_by('-created')
         )
