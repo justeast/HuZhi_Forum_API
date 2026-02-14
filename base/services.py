@@ -144,8 +144,10 @@ def get_user_achievements(user: User) -> dict:
     统计用户个人成就
     - 获得赞同：只统计 UPVOTE（包含对问题和回答的赞同）
     - 作出：回答数量
+    - 关注：被多少人关注
     """
     answer_count = Answer.objects.filter(respondent=user).count()
+    follower_count = UserFollow.objects.filter(following=user).count()
 
     question_upvote_count = QuestionVote.objects.filter(
         vote_type=vote_c.UPVOTE,
@@ -159,6 +161,7 @@ def get_user_achievements(user: User) -> dict:
     return {
         'agree_count': question_upvote_count + answer_upvote_count,
         'answer_count': answer_count,
+        'follower_count': follower_count,
     }
 
 

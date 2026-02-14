@@ -149,6 +149,7 @@ class UserAchievementsRespSerializer(serializers.Serializer):
     """
     agree_count = serializers.IntegerField()
     answer_count = serializers.IntegerField()
+    follower_count = serializers.IntegerField()
 
 
 class UserFollowReqSerializer(serializers.Serializer):
