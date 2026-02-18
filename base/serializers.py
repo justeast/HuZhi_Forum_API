@@ -183,3 +183,19 @@ class UserFollowersListSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserFollow
         fields = ['user', 'followed_at', 'is_mutual']
+
+
+class UserCardRespSerializer(serializers.Serializer):
+    """
+    用户卡片统计响应序列化器
+    用于问题详情页右侧“关于作者”卡片展示
+    """
+    id = serializers.UUIDField()
+    username = serializers.CharField()
+    avatar = serializers.URLField(allow_null=True)
+    bio = serializers.CharField(allow_blank=True, allow_null=True)
+    question_count = serializers.IntegerField()
+    answer_count = serializers.IntegerField()
+    follower_count = serializers.IntegerField()
+    is_following = serializers.BooleanField()
+    is_mutual = serializers.BooleanField()

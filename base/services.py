@@ -7,6 +7,7 @@ from base.models import User
 from base.models import UserFollow
 from base import constants as c
 from answer.models import Answer
+from question.models import Question
 from vote import constants as vote_c
 from vote.models import QuestionVote, AnswerVote
 from common.exceptions import BusinessException
@@ -183,3 +184,44 @@ def toggle_follow_user(user: User, target_user_id, action: int) -> None:
         UserFollow.objects.get_or_create(follower=user, following=target_user)
     else:
         UserFollow.objects.filter(follower=user, following=target_user).delete()
+
+
+def get_user_card(current_user: User, target_user_id) -> dict:
+    """
+    获取用户卡片统计信息（用于“关于作者”卡片）
+    - 包含用户基础信息、提问/回答/粉丝统计、关注态与互关态
+    """
+    target_user = User.objects.filter(id=target_user_id).first()
+    if not target_user:
+        raise BusinessException(code=c.USER_NOT_FOUND, msg=c.USER_NOT_FOUND_MSG)
+
+    question_count = Question.objects.filter(questioner=target_user).count()
+    answer_count = Answer.objects.filter(respondent=target_user).count()
+    follower_count = UserFollow.objects.filter(following=target_user).count()
+
+    # 自己查看自己的卡片时，关注态与互关态固定为 False
+    if current_user.id == target_user.id:
+        is_following = False
+        is_mutual = False
+    else:
+        is_following = UserFollow.objects.filter(
+            follower=current_user,
+            following=target_user,
+        ).exists()
+        is_followed_by = UserFollow.objects.filter(
+            follower=target_user,
+            following=current_user,
+        ).exists()
+        is_mutual = is_following and is_followed_by
+
+    return {
+        'id': target_user.id,
+        'username': target_user.username,
+        'avatar': target_user.avatar,
+        'bio': target_user.bio,
+        'question_count': question_count,
+        'answer_count': answer_count,
+        'follower_count': follower_count,
+        'is_following': is_following,
+        'is_mutual': is_mutual,
+    }

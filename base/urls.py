@@ -14,6 +14,7 @@ urlpatterns = [
     path('following/users/', views.UserFollowingUsersView.as_view(), name='following_users'),
     path('followers/users/', views.UserFollowersUsersView.as_view(), name='followers_users'),
     path('<uuid:user_id>/follow/', views.UserFollowView.as_view(), name='user_follow'),
+    path('<uuid:user_id>/card/', views.UserCardView.as_view(), name='user_card'),
     path('achievements/', views.UserAchievementsView.as_view(), name='user_achievements'),
     path('questions/', views.UserQuestionsView.as_view(), name='user_questions'),
     path('answers/', views.UserAnswersView.as_view(), name='user_answers'),

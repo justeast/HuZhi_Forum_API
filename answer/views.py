@@ -1,6 +1,7 @@
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from django.db.models import Count
 from django_filters.rest_framework import DjangoFilterBackend
 from answer.models import Answer
 from answer import serializers, services
@@ -20,11 +21,25 @@ class AnswerViewSet(BaseModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['question']
 
+    def get_queryset(self):
+        """
+        list 场景下（问题详情页回答列表）补充 collected_count（按用户去重），避免额外接口/查询
+        """
+        queryset = super().get_queryset()
+        if self.action == 'list' and self.request.query_params.get('question'):
+            return queryset.annotate(
+                collected_count=Count('collections__owner', distinct=True)
+            )
+        return queryset
+
     def get_serializer_class(self):
         """
         根据不同操作返回不同序列化器
         """
         if self.action == 'list':
+            # 问题详情页：通过 query string 传 question 获取回答列表
+            if self.request.query_params.get('question'):
+                return serializers.AnswerListForQuestionSerializer
             return serializers.AnswerListSerializer
         elif self.action == 'retrieve':
             return serializers.AnswerDetailSerializer

@@ -19,6 +19,7 @@ from base.serializers import (
     UserFollowReqSerializer,
     UserFollowingListSerializer,
     UserFollowersListSerializer,
+    UserCardRespSerializer,
 )
 from base import constants as c
 from base import services
@@ -280,3 +281,16 @@ class UserAnswersView(PaginatedListAPIView):
             .prefetch_related('comments')
             .order_by('-modified', '-created')
         )
+
+
+class UserCardView(APIView):
+    """
+    用户卡片统计（用于“关于作者”卡片）
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, user_id):
+        data = services.get_user_card(current_user=request.user, target_user_id=user_id)
+        serializer = UserCardRespSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        return OkResponse(data=serializer.validated_data)

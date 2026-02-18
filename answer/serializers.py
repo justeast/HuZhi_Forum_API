@@ -60,6 +60,17 @@ class AnswerListSerializer(AnswerSimpleSerializer):
         fields = AnswerSimpleSerializer.Meta.fields + ['created', 'modified']
 
 
+class AnswerListForQuestionSerializer(AnswerListSerializer):
+    """
+    问题详情页的回答列表序列化器
+    补充回答“被收藏次数”（按用户去重）
+    """
+    collected_count = serializers.IntegerField(read_only=True)
+
+    class Meta(AnswerListSerializer.Meta):
+        fields = AnswerListSerializer.Meta.fields + ['collected_count']
+
+
 class AnswerWithQuestionSerializer(AnswerListSerializer):
     """
     回答列表（携带所属问题简要信息）
