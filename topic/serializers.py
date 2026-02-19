@@ -48,6 +48,36 @@ class TopicSimpleSerializer(TopicFollowStateSerializer):
         fields = TopicFollowStateSerializer.Meta.fields
 
 
+class TopicHoverSerializer(TopicSimpleSerializer):
+    """
+    话题悬浮卡片序列化器（用于问题详情页悬浮展示）
+    说明：统计字段一般由问题详情接口预取 topics 的 queryset 通过 annotate 注入，以避免 N+1；未注入则会兜底 count()，可能产生额外查询。
+    """
+    follower_count = serializers.SerializerMethodField()
+    question_count = serializers.SerializerMethodField()
+
+    class Meta(TopicSimpleSerializer.Meta):
+        fields = TopicSimpleSerializer.Meta.fields + ['follower_count', 'question_count']
+
+    def get_follower_count(self, obj):
+        """
+        获取关注者数量
+        """
+        annotated = getattr(obj, 'follower_count', None)
+        if annotated is not None:
+            return int(annotated)
+        return obj.followers.count()
+
+    def get_question_count(self, obj):
+        """
+        获取该话题下的问题数量
+        """
+        annotated = getattr(obj, 'question_count', None)
+        if annotated is not None:
+            return int(annotated)
+        return obj.questions.count()
+
+
 class TopicListSerializer(TopicFollowStateSerializer):
     """
     话题列表序列化器

@@ -4,7 +4,7 @@ from question.models import Question
 from topic.models import Topic
 from vote.models import QuestionVote
 from vote import constants as vote_c
-from topic.serializers import TopicSimpleSerializer
+from topic.serializers import TopicHoverSerializer, TopicSimpleSerializer
 from base.serializers import UserSimpleSerializer
 from question import constants as c
 from topic import constants as topic_c
@@ -95,6 +95,8 @@ class QuestionDetailSerializer(QuestionListSerializer):
     """
     问题详情序列化器（继承列表序列化器，新增 is_following 字段）
     """
+    # 仅问题详情页需要悬浮卡片展示统计信息，因此这里覆写 topics 的序列化器
+    topics = TopicHoverSerializer(many=True, read_only=True)
     is_following = serializers.SerializerMethodField()
     
     class Meta(QuestionListSerializer.Meta):

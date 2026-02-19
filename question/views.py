@@ -2,7 +2,7 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.filters import SearchFilter
-from django.db.models import BooleanField, Exists, OuterRef, Prefetch, Value
+from django.db.models import BooleanField, Count, Exists, OuterRef, Prefetch, Value
 from django_filters.rest_framework import DjangoFilterBackend
 from question.models import Question
 from question import serializers, services, filters
@@ -35,6 +35,12 @@ class QuestionViewSet(BaseModelViewSet):
             is_following_expr = Value(False, output_field=BooleanField())
 
         topics_qs = Topic.objects.annotate(is_following=is_following_expr)
+        if getattr(self, 'action', None) == 'retrieve':
+            # 仅问题详情页的 topics 悬浮卡片需要展示统计信息，这里按需注解，避免影响其他接口返回与性能
+            topics_qs = topics_qs.annotate(
+                follower_count=Count('followers', distinct=True),
+                question_count=Count('questions', distinct=True),
+            )
         return (
             Question.objects.select_related('questioner')
             .prefetch_related(Prefetch('topics', queryset=topics_qs), 'followers')
