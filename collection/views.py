@@ -1,6 +1,7 @@
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from django.db.models import Exists, OuterRef
 from collection.models import Collection
 from answer.models import Answer
 from collection import serializers, services
@@ -110,7 +111,14 @@ class CollectionViewSet(BaseModelViewSet):
         self.check_object_permissions(request, collection)
 
         # 获取收藏夹内的回答列表
-        queryset = collection.answers.select_related('respondent', 'question').prefetch_related('comments')
+        queryset = (
+            collection.answers.select_related('respondent', 'question')
+            .prefetch_related('comments')
+            # 当前用户是否已收藏该回答：AnswerSimpleSerializer 会优先读取该注解，避免列表场景 N+1
+            .annotate(is_collected=Exists(
+                Collection.objects.filter(owner=request.user, answers=OuterRef('pk'))
+            ))
+        )
         
         # 分页
         page = self.paginate_queryset(queryset)

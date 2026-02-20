@@ -1,10 +1,11 @@
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
-from django.db.models import Count
+from django.db.models import Count, Exists, OuterRef
 from django_filters.rest_framework import DjangoFilterBackend
 from answer.models import Answer
 from answer import serializers, services
+from collection.models import Collection
 from vote import services as vote_services
 from vote.serializers import VoteReqSerializer
 from common.response import OkResponse
@@ -28,7 +29,11 @@ class AnswerViewSet(BaseModelViewSet):
         queryset = super().get_queryset()
         if self.action == 'list' and self.request.query_params.get('question'):
             return queryset.annotate(
-                collected_count=Count('collections__owner', distinct=True)
+                collected_count=Count('collections__owner', distinct=True),
+                # 当前用户是否已收藏该回答（存在任意一个归属当前用户的收藏夹包含该回答即可）
+                is_collected=Exists(
+                    Collection.objects.filter(owner=self.request.user, answers=OuterRef('pk'))
+                ),
             )
         return queryset
 

@@ -1,4 +1,4 @@
-from django.db.models import Count, Q
+from django.db.models import BooleanField, Count, Exists, OuterRef, Q, Value
 from rest_framework import serializers
 from question.models import Question
 from topic.models import Topic
@@ -81,9 +81,20 @@ class QuestionListSerializer(serializers.ModelSerializer):
         """
         # 这里使用局部导入，避免与 question/answer 序列化器之间形成循环依赖
         from answer.serializers import AnswerSimpleSerializer
+        from collection.models import Collection
+
+        request = self.context.get('request')
+        if request and request.user and request.user.is_authenticated:
+            is_collected_expr = Exists(
+                Collection.objects.filter(owner=request.user, answers=OuterRef('pk'))
+            )
+        else:
+            is_collected_expr = Value(False, output_field=BooleanField())
 
         top = obj.answers.annotate(
-            upvotes=Count('votes', filter=Q(votes__vote_type=vote_c.UPVOTE))
+            upvotes=Count('votes', filter=Q(votes__vote_type=vote_c.UPVOTE)),
+            # 当前用户是否已收藏该回答：用于问题列表 top_answer 的收藏按钮状态
+            is_collected=is_collected_expr,
         ).order_by('-upvotes').first()
         
         if top:

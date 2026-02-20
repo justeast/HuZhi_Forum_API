@@ -17,12 +17,14 @@ class AnswerSimpleSerializer(serializers.ModelSerializer):
     upvote_count = serializers.SerializerMethodField()
     comment_count = serializers.SerializerMethodField()
     user_vote_status = serializers.SerializerMethodField()
+    is_collected = serializers.SerializerMethodField()
     
     class Meta:
         model = Answer
         fields = [
             'id', 'content', 'respondent',
-            'upvote_count', 'comment_count', 'user_vote_status'
+            'upvote_count', 'comment_count', 'user_vote_status',
+            'is_collected',
         ]
     
     def get_upvote_count(self, obj):
@@ -50,6 +52,24 @@ class AnswerSimpleSerializer(serializers.ModelSerializer):
             except AnswerVote.DoesNotExist:
                 return vote_c.CANCEL_VOTE
         return vote_c.CANCEL_VOTE
+    
+    def get_is_collected(self, obj):
+        """
+        当前用户是否已收藏该回答
+
+        说明：在回答列表（尤其是问题详情页回答列表）场景下，推荐在 queryset 中通过 Exists annotate 注入
+        is_collected 字段，以避免逐条回答触发 exists() 带来的 N+1 查询。
+        """
+        annotated = getattr(obj, 'is_collected', None)
+        if isinstance(annotated, bool):
+            return annotated
+
+        request = self.context.get('request')
+        if not request or not request.user or not request.user.is_authenticated:
+            return False
+
+        # 兜底逻辑：当未通过 annotate 注入 is_collected 时，回退到 exists() 判断
+        return obj.collections.filter(owner=request.user).exists()
 
 
 class AnswerListSerializer(AnswerSimpleSerializer):

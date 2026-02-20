@@ -25,6 +25,7 @@ from base import constants as c
 from base import services
 from answer.models import Answer
 from answer.serializers import AnswerWithQuestionSerializer
+from collection.models import Collection
 from question.models import Question
 from question.serializers import QuestionListSerializer
 from question import services as question_services
@@ -279,6 +280,10 @@ class UserAnswersView(PaginatedListAPIView):
             Answer.objects.filter(respondent=self.request.user)
             .select_related('respondent', 'question')
             .prefetch_related('comments')
+            # 当前用户是否已收藏该回答：AnswerSimpleSerializer 会优先读取该注解，避免列表场景 N+1
+            .annotate(is_collected=Exists(
+                Collection.objects.filter(owner=self.request.user, answers=OuterRef('pk'))
+            ))
             .order_by('-modified', '-created')
         )
 
