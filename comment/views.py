@@ -70,8 +70,16 @@ class CommentViewSet(
         """
         instance = self.get_object()
         self.check_object_permissions(request, instance)
+
+        # 先记录所属回答，用于删除后返回该回答的最新评论总数（包含二级评论）
+        answer_id = instance.answer_id
+
+        # 删除父评论时会级联删除其 replies（二级评论）
         instance.delete()
-        return OkResponse(status_code=status.HTTP_204_NO_CONTENT)
+
+        # 返回删除后的评论总数，便于前端准确更新 answer.comment_count
+        comment_count = Comment.objects.filter(answer_id=answer_id).count()
+        return OkResponse(data={'comment_count': comment_count})
     
     @action(detail=True, methods=['post'], url_path='like')
     def like(self, request, pk=None):
