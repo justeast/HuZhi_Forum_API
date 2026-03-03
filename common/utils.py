@@ -2,6 +2,7 @@ import re
 import random
 import string
 from django.db.models import Func
+from django.db.models import IntegerField
 from base import constants as c
 from base.models import User
 from common.exceptions import BusinessException
@@ -16,6 +17,7 @@ class TimestampDiffHours(Func):
     function = "TIMESTAMPDIFF"
     template = "%(function)s(HOUR, %(expressions)s)"
     arity = 2
+    output_field = IntegerField()
 
 
 def validate_password(value: str) -> str:
