@@ -7,6 +7,7 @@ from chat.models import PrivateChat
 from chat import constants as chat_c
 from chat import services
 from chat.serializers import MessageListSerializer
+from common.exceptions import BusinessException
 
 User = get_user_model()
 
@@ -164,10 +165,17 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             )
             
         except Exception as e:
+            # 业务错误：透传 code/msg，便于前端精确处理（例如私信发送限制）
+            if isinstance(e, BusinessException):
+                code = e.code
+                message = e.msg
+            else:
+                code = chat_c.MESSAGE_SEND_FAILED
+                message = str(e)
             await self.send_json({
                 'type': chat_c.WS_MSG_TYPE_ERROR,
-                'code': chat_c.MESSAGE_SEND_FAILED,
-                'message': str(e)
+                'code': code,
+                'message': message
             })
     
     async def chat_message(self, event):

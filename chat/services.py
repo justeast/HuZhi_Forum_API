@@ -1,7 +1,8 @@
 from django.db import transaction
 from chat.models import PrivateChat, Message
-from base.models import User
+from base.models import User, UserFollow
 from chat import constants as chat_c
+from common.exceptions import BusinessException
 
 
 def get_or_create_chat(user, receiver_id):
@@ -27,6 +28,33 @@ def send_message(chat, sender, content, msg_type=chat_c.TEXT):
     发送消息
     """
     with transaction.atomic():
+        # 加锁会话行，避免并发时“非互关只能发一条”约束被绕过
+        chat = (
+            PrivateChat.objects.select_for_update()
+            .select_related('user1', 'user2')
+            .get(id=chat.id)
+        )
+
+        # 获取对方用户
+        other = chat.user2 if chat.user1_id == sender.id else chat.user1
+
+        # 互关用户不受限制
+        is_mutual = (
+            UserFollow.objects.filter(follower=sender, following=other).exists()
+            and UserFollow.objects.filter(follower=other, following=sender).exists()
+        )
+
+        if not is_mutual:
+            # 非互关：在对方回复我之前，我只能发送一条消息（文本/图片都算）
+            other_has_messaged = Message.objects.filter(chat=chat, sender=other).exists()
+            if not other_has_messaged:
+                sender_has_messaged = Message.objects.filter(chat=chat, sender=sender).exists()
+                if sender_has_messaged:
+                    raise BusinessException(
+                        code=chat_c.CHAT_SEND_LIMITED,
+                        msg=chat_c.CHAT_SEND_LIMITED_MSG,
+                    )
+
         message = Message.objects.create(
             chat=chat,
             sender=sender,

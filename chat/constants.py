@@ -21,6 +21,7 @@ INVALID_RECEIVER = 80004  # 无效的接收者
 CANNOT_CHAT_WITH_SELF = 80005  # 不能给自己发消息
 MESSAGE_NOT_FOUND = 80006  # 消息不存在
 INVALID_TOKEN = 80007  # 无效的认证令牌
+CHAT_SEND_LIMITED = 80008  # 非互关消息发送受限
 
 # 错误消息
 CHAT_NOT_FOUND_MSG = "会话不存在"
@@ -30,3 +31,4 @@ INVALID_RECEIVER_MSG = "无效的接收者"
 CANNOT_CHAT_WITH_SELF_MSG = "不能给自己发消息"
 MESSAGE_NOT_FOUND_MSG = "消息不存在"
 INVALID_TOKEN_MSG = "无效的认证令牌"
+CHAT_SEND_LIMITED_MSG = "对方回复前仅可发送一条消息"
