@@ -2,15 +2,34 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.filters import SearchFilter
-from django.db.models import BooleanField, Count, Exists, OuterRef, Prefetch, Value
+from datetime import timedelta
+from django.utils import timezone
+from django.db.models import (
+    BooleanField,
+    Case,
+    Count,
+    Exists,
+    F,
+    FloatField,
+    IntegerField,
+    OuterRef,
+    Prefetch,
+    Value,
+    When,
+)
+from django.db.models.functions import Cast, Now
+from django.db.models.functions.math import Power
 from django_filters.rest_framework import DjangoFilterBackend
 from question.models import Question
 from question import serializers, services, filters
+from question import constants as c
 from topic.models import Topic
 from vote import services as vote_services
 from vote.serializers import VoteReqSerializer
+from base.models import UserFollow
 from common.response import OkResponse
 from common.permissions import IsOwnerOrReadOnly
+from common.utils import TimestampDiffHours
 from common.viewsets import BaseModelViewSet
 
 
@@ -41,10 +60,62 @@ class QuestionViewSet(BaseModelViewSet):
                 follower_count=Count('followers', distinct=True),
                 question_count=Count('questions', distinct=True),
             )
-        return (
+
+        queryset = (
             Question.objects.select_related('questioner')
             .prefetch_related(Prefetch('topics', queryset=topics_qs), 'followers')
         )
+
+        # 首页问题流：显式使用 ?scene=home 开启
+        if self.action == 'list' and self.request.query_params.get('scene') == 'home':
+            # 登录态：首页不必包含用户自己的问题
+            if self.request.user and self.request.user.is_authenticated:
+                queryset = queryset.exclude(questioner=self.request.user)
+
+                # 关注相关性（轻量推荐）：关注的人 > 关注的话题 > 其他
+                queryset = queryset.annotate(
+                    is_from_followed_user=Exists(
+                        UserFollow.objects.filter(
+                            follower=self.request.user,
+                            following_id=OuterRef('questioner_id'),
+                        )
+                    ),
+                    is_in_followed_topic=Exists(
+                        Topic.objects.filter(
+                            followers=self.request.user,
+                            questions=OuterRef('pk'),
+                        )
+                    ),
+                ).annotate(
+                    relevance=Case(
+                        When(is_from_followed_user=True, then=Value(2)),
+                        When(is_in_followed_topic=True, then=Value(1)),
+                        default=Value(0),
+                        output_field=IntegerField(),
+                    )
+                )
+            else:
+                queryset = queryset.annotate(relevance=Value(0, output_field=IntegerField()))
+
+            # 默认取近 N 天；若窗口内无数据则兜底放宽窗口，避免首页空白
+            since = timezone.now() - timedelta(days=c.HOME_FEED_WINDOW_DAYS)
+            window_qs = queryset.filter(created__gte=since)
+            if not window_qs.exists():
+                window_qs = queryset
+            queryset = window_qs
+
+            # 近期热度（带时间衰减）：hot_score = view_count / pow(age_hours + k, alpha)
+            # k：防止刚创建时分母过小；alpha：衰减强度
+            k = c.HOME_HOT_SCORE_K
+            alpha = c.HOME_HOT_SCORE_ALPHA
+            queryset = queryset.annotate(
+                age_hours=TimestampDiffHours(F('created'), Now()),
+            ).annotate(
+                hot_score=Cast(F('view_count'), output_field=FloatField())
+                / Power(Cast(F('age_hours'), output_field=FloatField()) + Value(k), Value(alpha)),
+            ).order_by('-relevance', '-hot_score', '-created')
+
+        return queryset
 
     def get_serializer_class(self):
         """

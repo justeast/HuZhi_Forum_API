@@ -1,9 +1,21 @@
 import re
 import random
 import string
+from django.db.models import Func
 from base import constants as c
 from base.models import User
 from common.exceptions import BusinessException
+
+
+class TimestampDiffHours(Func):
+    """
+    计算两个时间字段的小时差（MySQL）
+    生成 SQL：TIMESTAMPDIFF(HOUR, datetime1, datetime2)
+    """
+
+    function = "TIMESTAMPDIFF"
+    template = "%(function)s(HOUR, %(expressions)s)"
+    arity = 2
 
 
 def validate_password(value: str) -> str:
