@@ -17,7 +17,7 @@ from django.db.models import (
     Value,
     When,
 )
-from django.db.models.functions import Cast, Now
+from django.db.models.functions import Cast, Greatest
 from django.db.models.functions.math import Power
 from django_filters.rest_framework import DjangoFilterBackend
 from question.models import Question
@@ -109,7 +109,15 @@ class QuestionViewSet(BaseModelViewSet):
             k = c.HOME_HOT_SCORE_K
             alpha = c.HOME_HOT_SCORE_ALPHA
             queryset = queryset.annotate(
-                age_hours=TimestampDiffHours(F('created'), Now()),
+                age_hours=Greatest(
+                    # 部分历史数据可能存在 created 晚于当前时间（例如时区/数据修复导致），会使 age_hours 为负数；
+                    # 若直接参与 pow(x, 1.5) 会触发 MySQL 报错（DOUBLE out of range），因此这里做下限截断。
+                    # 由于项目当前 USE_TZ=False，created 存储为本地时间；
+                    # 若使用 MySQL 的 NOW()（可能为 UTC）计算差值，会导致新数据出现负数小时差。
+                    # 因此这里使用应用服务器时间作为“当前时间”参与计算，保证口径一致。
+                    TimestampDiffHours(F('created'), Value(timezone.now())),
+                    Value(0),
+                ),
             ).annotate(
                 hot_score=Cast(F('view_count'), output_field=FloatField())
                 / Power(Cast(F('age_hours'), output_field=FloatField()) + Value(k), Value(alpha)),
