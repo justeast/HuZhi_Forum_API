@@ -1,11 +1,12 @@
 import re
 import random
 import string
+import uuid
 from django.db.models import Func
 from django.db.models import IntegerField
 from base import constants as c
 from base.models import User
-from common.exceptions import BusinessException
+from common.exceptions import BusinessException, ParamException
 
 
 class TimestampDiffHours(Func):
@@ -18,6 +19,23 @@ class TimestampDiffHours(Func):
     template = "%(function)s(HOUR, %(expressions)s)"
     arity = 2
     output_field = IntegerField()
+
+
+def parse_uuid_query_param(request, key: str):
+    """
+    解析 query string 中的 UUID 参数。
+
+    - 参数不存在/为空：返回 None
+    - 参数非合法 UUID：抛 ParamException（请求参数错误）
+    """
+    value = request.query_params.get(key)
+    if not value:
+        return None
+
+    try:
+        return uuid.UUID(str(value))
+    except (ValueError, AttributeError, TypeError):
+        raise ParamException()
 
 
 def validate_password(value: str) -> str:

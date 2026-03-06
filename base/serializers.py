@@ -143,6 +143,19 @@ class UserProfileSerializer(serializers.ModelSerializer):
         return validate_phone_unique(value, exclude_pk=self.instance.pk)
 
 
+class UserPublicProfileSerializer(serializers.ModelSerializer):
+    """
+    用户公开主页信息（用于查看他人主页）
+
+    说明：不返回 email/phone 等敏感字段。
+    """
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'avatar', 'cover_image', 'bio', 'created']
+        read_only_fields = fields
+
+
 class UserAchievementsRespSerializer(serializers.Serializer):
     """
     用户个人成就响应序列化器

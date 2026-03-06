@@ -2,14 +2,16 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Exists, OuterRef
-import uuid
 from collection.models import Collection
 from answer.models import Answer
 from collection import serializers, services
 from common.response import OkResponse
 from common.permissions import IsOwnerOrReadOnly, IsCollectionOwnerOrPublic
-from common.exceptions import ParamException, BusinessException
+from common.exceptions import BusinessException
+from common.utils import parse_uuid_query_param
 from answer import constants as answer_c
+from base.models import User
+from base import constants as base_c
 from common.viewsets import BaseModelViewSet
 
 
@@ -38,16 +40,14 @@ class CollectionViewSet(BaseModelViewSet):
         """
         重写queryset：
         - 列表接口只返回当前用户的收藏夹
+        - 支持通过 ?owner=<user_id> 查看他人公开收藏夹（用于他人主页收藏Tab）
         - 支持通过 ?answer=<answer_id> 过滤出“包含该回答”的收藏夹列表（用于取消收藏时弹窗选择）
         """
         if self.action == 'list':
-            queryset = Collection.objects.filter(owner=self.request.user).select_related('owner')
-            answer_id = self.request.query_params.get('answer')
-            if answer_id:
-                try:
-                    answer_uuid = uuid.UUID(str(answer_id))
-                except (ValueError, AttributeError, TypeError):
-                    raise ParamException()
+            answer_uuid = parse_uuid_query_param(self.request, 'answer')
+            if answer_uuid:
+                # 取消收藏弹窗场景：仅允许查询“我自己的”收藏夹列表
+                queryset = Collection.objects.filter(owner=self.request.user).select_related('owner')
 
                 # 若回答不存在，则直接返回业务错误，避免前端误用导致“静默空列表”难以排查
                 if not Answer.objects.filter(id=answer_uuid).exists():
@@ -57,7 +57,26 @@ class CollectionViewSet(BaseModelViewSet):
                     )
 
                 queryset = queryset.filter(answers__id=answer_uuid).distinct()
-            return queryset
+                return queryset
+
+            owner_uuid = parse_uuid_query_param(self.request, 'owner')
+            if owner_uuid:
+
+                # 查看自己：返回全部（公开+私有）
+                if owner_uuid == self.request.user.id:
+                    return Collection.objects.filter(owner=self.request.user).select_related('owner')
+
+                # 查看他人：仅返回公开收藏夹
+                if not User.objects.filter(id=owner_uuid).exists():
+                    raise BusinessException(code=base_c.USER_NOT_FOUND, msg=base_c.USER_NOT_FOUND_MSG)
+
+                return (
+                    Collection.objects.filter(owner_id=owner_uuid, is_public=True)
+                    .select_related('owner')
+                )
+
+            # 默认：返回当前用户自己的收藏夹
+            return Collection.objects.filter(owner=self.request.user).select_related('owner')
         return super().get_queryset()
 
     def get_permissions(self):

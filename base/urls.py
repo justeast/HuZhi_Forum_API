@@ -9,6 +9,7 @@ urlpatterns = [
     path('pwd-reset/', views.UserPwdResetView.as_view(), name='pwd_reset'),
     path('pwd-change/', views.UserPwdChangeView.as_view(), name='pwd_change'),
     path('profile/', views.UserProfileView.as_view(), name='profile'),
+    path('<uuid:user_id>/profile/', views.UserPublicProfileView.as_view(), name='public_profile'),
     path('following/topics/', views.UserFollowingTopicsView.as_view(), name='following_topics'),
     path('following/questions/', views.UserFollowingQuestionsView.as_view(), name='following_questions'),
     path('following/users/', views.UserFollowingUsersView.as_view(), name='following_users'),
