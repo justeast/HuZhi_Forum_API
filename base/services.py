@@ -1,10 +1,14 @@
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+from django.db import transaction
 from django.db.models import Q
+from django.utils import timezone
 from django.conf import settings
 from django.core.mail import send_mail
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
-from base.models import User
-from base.models import UserFollow
+from base.models import User, UserFollow, Notification
+from base.serializers import NotificationListSerializer
 from base import constants as c
 from answer.models import Answer
 from question.models import Question
@@ -181,7 +185,18 @@ def toggle_follow_user(user: User, target_user_id, action: int) -> None:
         raise BusinessException(code=c.CANNOT_FOLLOW_SELF, msg=c.CANNOT_FOLLOW_SELF_MSG)
 
     if action == c.USER_FOLLOW_ACTION:
-        UserFollow.objects.get_or_create(follower=user, following=target_user)
+        _, created = UserFollow.objects.get_or_create(follower=user, following=target_user)
+        if created:
+            create_notification(
+                recipient=target_user,
+                actor=user,
+                notification_type=c.NOTIFICATION_TYPE_USER_FOLLOWED,
+                title='有人关注了你',
+                content=f'{user.username} 关注了你',
+                payload={
+                    'user_id': str(user.id),
+                },
+            )
     else:
         UserFollow.objects.filter(follower=user, following=target_user).delete()
 
@@ -225,3 +240,82 @@ def get_user_card(current_user: User, target_user_id) -> dict:
         'is_following': is_following,
         'is_mutual': is_mutual,
     }
+
+
+def create_notification(recipient: User, actor: User | None, notification_type: int, title: str, content: str, payload: dict | None = None) -> Notification | None:
+    """
+    创建系统通知，并在事务提交后推送到当前用户的 WebSocket 连接
+    """
+    if actor and recipient.id == actor.id:
+        return None
+
+    notification = Notification.objects.create(
+        recipient=recipient,
+        actor=actor,
+        type=notification_type,
+        title=title,
+        content=content,
+        payload=payload or {},
+    )
+
+    transaction.on_commit(lambda: push_notification(notification))
+    return notification
+
+
+def push_notification(notification: Notification) -> None:
+    """
+    推送单条系统通知
+    """
+    channel_layer = get_channel_layer()
+    if not channel_layer:
+        return
+
+    data = NotificationListSerializer(notification).data
+    async_to_sync(channel_layer.group_send)(
+        f'user_{notification.recipient_id}',
+        {
+            'type': 'system_notification',
+            'data': data,
+        },
+    )
+
+
+def get_user_notifications(user: User):
+    """
+    获取当前用户的系统通知列表
+    """
+    return Notification.objects.filter(recipient=user).select_related('actor').order_by('-created')
+
+
+def get_user_unread_notification_count(user: User) -> int:
+    """
+    获取当前用户未读通知数
+    """
+    return Notification.objects.filter(recipient=user, is_read=False).count()
+
+
+def mark_notification_read(user: User, notification_id) -> Notification:
+    """
+    标记单条通知已读
+    """
+    notification = Notification.objects.filter(id=notification_id, recipient=user).first()
+    if not notification:
+        raise BusinessException(code=c.NOTIFICATION_NOT_FOUND, msg=c.NOTIFICATION_NOT_FOUND_MSG)
+
+    if not notification.is_read:
+        notification.is_read = True
+        notification.read_at = timezone.now()
+        notification.save(update_fields=['is_read', 'read_at', 'modified'])
+    return notification
+
+
+def mark_all_notifications_read(user: User) -> None:
+    """
+    标记当前用户全部通知为已读
+    """
+    now = timezone.now()
+    Notification.objects.filter(recipient=user, is_read=False).update(
+        is_read=True,
+        read_at=now,
+        modified=now,
+    )

@@ -19,4 +19,8 @@ urlpatterns = [
     path('achievements/', views.UserAchievementsView.as_view(), name='user_achievements'),
     path('questions/', views.UserQuestionsView.as_view(), name='user_questions'),
     path('answers/', views.UserAnswersView.as_view(), name='user_answers'),
+    path('notifications/', views.UserNotificationListView.as_view(), name='user_notifications'),
+    path('notifications/unread-count/', views.UserNotificationUnreadCountView.as_view(), name='user_notifications_unread_count'),
+    path('notifications/<uuid:notification_id>/read/', views.UserNotificationReadView.as_view(), name='user_notification_read'),
+    path('notifications/read-all/', views.UserNotificationReadAllView.as_view(), name='user_notifications_read_all'),
 ]

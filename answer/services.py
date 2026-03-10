@@ -1,5 +1,7 @@
 from answer.models import Answer
 from question.models import Question
+from base import services as base_services
+from base import constants as base_c
 
 
 def create_answer(user, validated_data: dict) -> Answer:
@@ -14,7 +16,20 @@ def create_answer(user, validated_data: dict) -> Answer:
         question=question,
         **validated_data
     )
-    
+
+    base_services.create_notification(
+        recipient=question.questioner,
+        actor=user,
+        notification_type=base_c.NOTIFICATION_TYPE_QUESTION_ANSWERED,
+        title='我的提问有人回答了',
+        content=f'{user.username} 回答了你的问题《{question.title}》',
+        payload={
+            'question_id': str(question.id),
+            'question_title': question.title,
+            'answer_id': str(answer.id),
+        },
+    )
+
     return answer
 
 

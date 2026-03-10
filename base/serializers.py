@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from base.models import User
 from base.models import UserFollow
+from base.models import Notification
 from common.utils import (
     validate_password,
     validate_username_unique,
@@ -212,3 +213,26 @@ class UserCardRespSerializer(serializers.Serializer):
     follower_count = serializers.IntegerField()
     is_following = serializers.BooleanField()
     is_mutual = serializers.BooleanField()
+
+
+class NotificationListSerializer(serializers.ModelSerializer):
+    """
+    系统通知列表序列化器
+    """
+    actor = UserSimpleSerializer(read_only=True)
+    type_display = serializers.CharField(source='get_type_display', read_only=True)
+
+    class Meta:
+        model = Notification
+        fields = [
+            'id', 'type', 'type_display', 'title', 'content',
+            'payload', 'is_read', 'read_at', 'created', 'actor',
+        ]
+        read_only_fields = fields
+
+
+class NotificationUnreadCountRespSerializer(serializers.Serializer):
+    """
+    系统通知未读数响应序列化器
+    """
+    unread_count = serializers.IntegerField()

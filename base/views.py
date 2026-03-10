@@ -22,6 +22,8 @@ from base.serializers import (
     UserFollowingListSerializer,
     UserFollowersListSerializer,
     UserCardRespSerializer,
+    NotificationListSerializer,
+    NotificationUnreadCountRespSerializer,
 )
 from base import constants as c
 from base import services
@@ -441,3 +443,52 @@ class UserCardView(APIView):
         serializer = UserCardRespSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         return OkResponse(data=serializer.validated_data)
+
+
+class UserNotificationListView(PaginatedListAPIView):
+    """
+    当前登录用户的系统通知列表
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = NotificationListSerializer
+
+    def get_queryset(self):
+        return services.get_user_notifications(self.request.user)
+
+
+class UserNotificationUnreadCountView(APIView):
+    """
+    当前登录用户的系统通知未读数
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        data = {
+            'unread_count': services.get_user_unread_notification_count(request.user)
+        }
+        serializer = NotificationUnreadCountRespSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        return OkResponse(data=serializer.validated_data)
+
+
+class UserNotificationReadView(APIView):
+    """
+    标记单条系统通知为已读
+    """
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, notification_id):
+        notification = services.mark_notification_read(request.user, notification_id)
+        serializer = NotificationListSerializer(notification)
+        return OkResponse(data=serializer.data)
+
+
+class UserNotificationReadAllView(APIView):
+    """
+    标记当前登录用户全部系统通知为已读
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        services.mark_all_notifications_read(request.user)
+        return OkResponse()

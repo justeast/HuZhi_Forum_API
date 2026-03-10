@@ -11,6 +11,7 @@ MSG_TYPE_CHOICES = (
 WS_MSG_TYPE_SEND = "send_message"  # 客户端发送消息
 WS_MSG_TYPE_NEW = "new_message"  # 服务端推送新消息
 WS_MSG_TYPE_READ = "message_read"  # 消息已读通知
+WS_MSG_TYPE_NOTIFICATION = "notification"  # 系统通知推送
 WS_MSG_TYPE_ERROR = "error"  # 错误响应
 
 # 错误码定义

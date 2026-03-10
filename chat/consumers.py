@@ -183,6 +183,15 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         接收 channel layer 推送的消息并发送给客户端
         """
         await self.send_json(event['data'])
+
+    async def system_notification(self, event):
+        """
+        接收系统通知并发送给客户端
+        """
+        await self.send_json({
+            'type': chat_c.WS_MSG_TYPE_NOTIFICATION,
+            'notification': event['data']
+        })
     
     # ==================== 数据库操作辅助方法 ====================
     

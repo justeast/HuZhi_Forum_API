@@ -5,6 +5,8 @@ from answer.models import Answer
 from base.models import User
 from vote.models import CommentVote
 from vote import constants as vote_c
+from base import services as base_services
+from base import constants as base_c
 
 
 def create_comment(user, validated_data):
@@ -28,7 +30,23 @@ def create_comment(user, validated_data):
         reply_to=reply_to,
         content=validated_data['content']
     )
-    
+
+    recipient = reply_to or (parent.user if parent else None)
+    if recipient:
+        base_services.create_notification(
+            recipient=recipient,
+            actor=user,
+            notification_type=base_c.NOTIFICATION_TYPE_COMMENT_REPLIED,
+            title='我的评论有人回复了',
+            content=f'{user.username} 回复了你的评论',
+            payload={
+                'question_id': str(answer.question_id),
+                'answer_id': str(answer.id),
+                'comment_id': str(comment.id),
+                'parent_comment_id': str(parent.id) if parent else None,
+            },
+        )
+
     return comment
 
 

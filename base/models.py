@@ -3,6 +3,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.conf import settings
 from model_utils.models import TimeStampedModel
+from base import constants as c
 
 
 class User(AbstractUser, TimeStampedModel):
@@ -81,3 +82,47 @@ class UserFollow(TimeStampedModel):
                 name='chk_user_follow_not_self',
             ),
         ]
+
+
+class Notification(TimeStampedModel):
+    """
+    系统通知模型
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='notifications',
+        verbose_name="接收者",
+    )
+
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name='sent_notifications',
+        null=True,
+        blank=True,
+        verbose_name="触发者",
+    )
+
+    type = models.SmallIntegerField(
+        choices=c.NOTIFICATION_TYPE_CHOICES,
+        verbose_name="通知类型",
+    )
+
+    title = models.CharField(max_length=200, verbose_name="通知标题")
+
+    content = models.CharField(max_length=500, verbose_name="通知内容")
+
+    payload = models.JSONField(default=dict, blank=True, verbose_name="附加数据")
+
+    is_read = models.BooleanField(default=False, verbose_name="是否已读")
+
+    read_at = models.DateTimeField(null=True, blank=True, verbose_name="已读时间")
+
+    class Meta:
+        db_table = "base_notification"
+        verbose_name = "系统通知"
+        verbose_name_plural = verbose_name
+        ordering = ['-created']
