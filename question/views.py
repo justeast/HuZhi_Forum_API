@@ -66,6 +66,9 @@ class QuestionViewSet(BaseModelViewSet):
             .prefetch_related(Prefetch('topics', queryset=topics_qs), 'followers')
         )
 
+        if self.action == 'list' and self.request.query_params.get('scene') == 'answer_recommend':
+            return services.build_answer_recommend_queryset(self.request.user)
+
         # 首页问题流：显式使用 ?scene=home 开启
         if self.action == 'list' and self.request.query_params.get('scene') == 'home':
             # 登录态：首页不必包含用户自己的问题
@@ -130,6 +133,8 @@ class QuestionViewSet(BaseModelViewSet):
         根据不同操作返回不同序列化器
         """
         if self.action == 'list':
+            if self.request.query_params.get('scene') == 'answer_recommend':
+                return serializers.QuestionRecommendSerializer
             return serializers.QuestionListSerializer
         elif self.action == 'retrieve':
             return serializers.QuestionDetailSerializer

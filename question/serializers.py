@@ -123,6 +123,23 @@ class QuestionDetailSerializer(QuestionListSerializer):
         return False
 
 
+class QuestionRecommendSerializer(serializers.ModelSerializer):
+    """
+    “写回答”场景的问题推荐序列化器
+    """
+    questioner = UserSimpleSerializer(read_only=True)
+    topics = TopicSimpleSerializer(many=True, read_only=True)
+    follower_count = serializers.IntegerField(read_only=True)
+    answer_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Question
+        fields = [
+            'id', 'title', 'questioner', 'topics',
+            'follower_count', 'answer_count', 'created'
+        ]
+
+
 class QuestionWriteSerializer(serializers.ModelSerializer):
     """
     问题写入序列化器（用于创建和更新）
