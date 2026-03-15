@@ -1,3 +1,4 @@
+import uuid
 from datetime import timedelta
 from django.db import transaction
 from django.db.models import BooleanField, Case, Count, Exists, IntegerField, OuterRef, Prefetch, Q, Value, When
@@ -7,6 +8,7 @@ from base.models import UserFollow
 from question.models import Question
 from topic.models import Topic
 from question import constants as c
+from common.content_safety import assert_text_safe
 
 
 def build_question_list_queryset(user, queryset):
@@ -117,6 +119,17 @@ def create_question(user, validated_data: dict) -> Question:
     """
     topic_ids = validated_data.pop('topic_ids', [])
 
+    assert_text_safe(
+        validated_data.get('title'),
+        user=user,
+        data_id=f"question_title_{uuid.uuid4().hex}",
+    )
+    assert_text_safe(
+        validated_data.get('content'),
+        user=user,
+        data_id=f"question_content_{uuid.uuid4().hex}",
+    )
+
     with transaction.atomic():
         # 创建问题
         question = Question.objects.create(
@@ -140,6 +153,19 @@ def update_question(question: Question, validated_data: dict) -> Question:
     更新问题
     """
     topic_ids = validated_data.pop('topic_ids', None)
+
+    if 'title' in validated_data:
+        assert_text_safe(
+            validated_data.get('title'),
+            user=question.questioner,
+            data_id=f"question_title_{question.id}",
+        )
+    if 'content' in validated_data:
+        assert_text_safe(
+            validated_data.get('content'),
+            user=question.questioner,
+            data_id=f"question_content_{question.id}",
+        )
 
     with transaction.atomic():
         # 更新基本字段

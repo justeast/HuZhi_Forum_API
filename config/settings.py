@@ -141,6 +141,10 @@ COS_SECRET_KEY = os.getenv("COS_SECRET_KEY")
 COS_BUCKET = os.getenv("COS_BUCKET")
 COS_REGION = os.getenv("COS_REGION")
 
+# 腾讯云内容安全配置
+CONTENT_SAFETY_TEXT_BIZTYPE = os.getenv("CONTENT_SAFETY_TEXT_BIZTYPE")
+CONTENT_SAFETY_IMAGE_BIZTYPE = os.getenv("CONTENT_SAFETY_TEXT_BIZTYPE")
+
 # 暴露需要的Header
 CORS_EXPOSE_HEADERS = [
     'Content-Disposition',  # 主要用于文件下载

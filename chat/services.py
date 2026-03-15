@@ -2,6 +2,7 @@ from django.db import transaction
 from chat.models import PrivateChat, Message
 from base.models import User, UserFollow
 from chat import constants as chat_c
+from common.content_safety import assert_image_safe, assert_text_safe
 from common.exceptions import BusinessException
 
 
@@ -27,6 +28,20 @@ def send_message(chat, sender, content, msg_type=chat_c.TEXT):
     """
     发送消息
     """
+    if msg_type == chat_c.IMAGE:
+        assert_image_safe(
+            content,
+            user=sender,
+            data_id=f"chat_image_{chat.id}",
+        )
+    else:
+        assert_text_safe(
+            content,
+            user=sender,
+            data_id=f"chat_text_{chat.id}",
+            session_id=str(chat.id),
+        )
+
     with transaction.atomic():
         # 加锁会话行，避免并发时“非互关只能发一条”约束被绕过
         chat = (

@@ -2,6 +2,7 @@ from answer.models import Answer
 from question.models import Question
 from base import services as base_services
 from base import constants as base_c
+from common.content_safety import assert_text_safe
 
 
 def create_answer(user, validated_data: dict) -> Answer:
@@ -10,6 +11,12 @@ def create_answer(user, validated_data: dict) -> Answer:
     """
     question_id = validated_data.pop('question_id')
     question = Question.objects.get(id=question_id)
+
+    assert_text_safe(
+        validated_data.get('content'),
+        user=user,
+        data_id=f"answer_create_{question_id}",
+    )
     
     answer = Answer.objects.create(
         respondent=user,
@@ -37,6 +44,13 @@ def update_answer(answer: Answer, validated_data: dict) -> Answer:
     """
     更新回答（仅更新 content）
     """
+    if 'content' in validated_data:
+        assert_text_safe(
+            validated_data.get('content'),
+            user=answer.respondent,
+            data_id=f"answer_update_{answer.id}",
+        )
+
     for key, value in validated_data.items():
         setattr(answer, key, value)
     answer.save()

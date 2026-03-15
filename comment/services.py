@@ -7,6 +7,7 @@ from vote.models import CommentVote
 from vote import constants as vote_c
 from base import services as base_services
 from base import constants as base_c
+from common.content_safety import assert_text_safe
 
 
 def create_comment(user, validated_data):
@@ -21,6 +22,12 @@ def create_comment(user, validated_data):
     answer = Answer.objects.get(id=answer_id)
     parent = Comment.objects.get(id=parent_id) if parent_id else None
     reply_to = User.objects.get(id=reply_to_id) if reply_to_id else None
+
+    assert_text_safe(
+        validated_data.get('content'),
+        user=user,
+        data_id=f"comment_create_{answer_id}",
+    )
     
     # 创建评论
     comment = Comment.objects.create(
