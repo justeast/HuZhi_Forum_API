@@ -13,12 +13,23 @@ ENV UV_SYSTEM_PYTHON=1
 WORKDIR /app
 
 # 安装系统依赖 (mysqlclient 需要这些编译工具)
-RUN apt-get update && apt-get install -y \
+# 大陆服务器构建时，先切换 Debian 软件源，避免 deb.debian.org 超时
+RUN if [ -f /etc/apt/sources.list.d/debian.sources ]; then \
+        sed -i 's|http://deb.debian.org/debian|https://mirrors.aliyun.com/debian|g' /etc/apt/sources.list.d/debian.sources; \
+        sed -i 's|http://security.debian.org/debian-security|https://mirrors.aliyun.com/debian-security|g' /etc/apt/sources.list.d/debian.sources; \
+        sed -i 's|http://deb.debian.org/debian-security|https://mirrors.aliyun.com/debian-security|g' /etc/apt/sources.list.d/debian.sources; \
+    elif [ -f /etc/apt/sources.list ]; then \
+        sed -i 's|http://deb.debian.org/debian|https://mirrors.aliyun.com/debian|g' /etc/apt/sources.list; \
+        sed -i 's|http://security.debian.org/debian-security|https://mirrors.aliyun.com/debian-security|g' /etc/apt/sources.list; \
+        sed -i 's|http://deb.debian.org/debian-security|https://mirrors.aliyun.com/debian-security|g' /etc/apt/sources.list; \
+    fi \
+    && apt-get update && apt-get install -y \
     default-libmysqlclient-dev \
     build-essential \
     pkg-config \
     netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
+
 
 # 从官方镜像中复制 uv 工具
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
