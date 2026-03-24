@@ -28,11 +28,9 @@ RUN if [ -f /etc/apt/sources.list.d/debian.sources ]; then \
     build-essential \
     pkg-config \
     netcat-openbsd \
+    && python -m pip install --no-cache-dir -i https://mirrors.aliyun.com/pypi/simple/ uv \
     && rm -rf /var/lib/apt/lists/*
 
-
-# 从官方镜像中复制 uv 工具
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
 # 1. 优先复制依赖定义文件 (利用 Docker 缓存层)
 COPY pyproject.toml uv.lock ./
