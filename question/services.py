@@ -124,11 +124,13 @@ def create_question(user, validated_data: dict) -> Question:
         user=user,
         data_id=f"question_title_{uuid.uuid4().hex}",
     )
-    assert_text_safe(
-        validated_data.get('content'),
-        user=user,
-        data_id=f"question_content_{uuid.uuid4().hex}",
-    )
+    content = validated_data.get('content')
+    if content:
+        assert_text_safe(
+            content,
+            user=user,
+            data_id=f"question_content_{uuid.uuid4().hex}",
+        )
 
     with transaction.atomic():
         # 创建问题
@@ -160,7 +162,7 @@ def update_question(question: Question, validated_data: dict) -> Question:
             user=question.questioner,
             data_id=f"question_title_{question.id}",
         )
-    if 'content' in validated_data:
+    if validated_data.get('content'):
         assert_text_safe(
             validated_data.get('content'),
             user=question.questioner,
