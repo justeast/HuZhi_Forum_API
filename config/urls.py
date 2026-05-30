@@ -17,6 +17,10 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
+admin.site.site_header = "乎知论坛后台管理"
+admin.site.site_title = "乎知论坛后台管理"
+admin.site.index_title = "乎知论坛后台首页"
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/", include("common.urls")),

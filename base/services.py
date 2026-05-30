@@ -44,6 +44,9 @@ def authenticate_user(account: str, password: str) -> dict:
     if not user.check_password(password):
         raise BusinessException(code=c.PASSWORD_INCORRECT, msg=c.PASSWORD_INCORRECT_MSG)
 
+    if not user.is_active:
+        raise BusinessException(code=c.USER_DISABLED, msg=c.USER_DISABLED_MSG)
+
     # 生成JWT token
     refresh = RefreshToken.for_user(user)
 
